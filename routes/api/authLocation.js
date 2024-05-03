@@ -4,5 +4,6 @@ const locationCheckController = require("../../controller/locationCheckControlle
 const router = Router();
 
 router.post("/", locationCheckController.locationAuth);
+router.post("/setRange", locationCheckController.setlocationAuth);
 
 module.exports = router;

@@ -2,6 +2,8 @@ const express = require("express");
 const authLocation = require("./routes/api/authLocation");
 const User = require("./routes/api/User");
 const createDepartment = require("./routes/api/createDepartment");
+
+const attendance = require("./routes/api/attendance");
 const db = require("./models");
 
 require("dotenv").config();
@@ -20,6 +22,7 @@ app.use("/api/v1/mapCheck", authLocation);
 
 app.use("/api/v1/Users", User);
 app.use("/api/v1/addDepartment", createDepartment);
+app.use("/api/v1/attendance", attendance);
 
 db.sequelize.sync({ force: false }).then(() => {
   app.listen(PORT, () => {

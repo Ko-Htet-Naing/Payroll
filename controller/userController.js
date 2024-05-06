@@ -1,6 +1,45 @@
-const { Users } = require("../models");
+const { Users, Department } = require("../models");
 
-const create = async (req, res) => {
+Users.addHook("afterCreate", async (user, options) => {
+  console.log("I am in after Create");
+  const departmentId = user.DepartmentId;
+  console.log(departmentId);
+  if (departmentId) {
+    const userCount = await Users.count({
+      where: { DepartmentId: departmentId },
+    });
+    await Department.update(
+      { totalCount: userCount },
+      { where: { id: departmentId } }
+    );
+  }
+});
+Users.addHook("afterDestroy", async (deletedUser, options) => {
+  console.log("I am in after Destroy");
+  const departmentId = deletedUser.DepartmentId;
+  if (departmentId) {
+    const userCount = await Users.count({
+      where: { DepartmentId: departmentId },
+    });
+    await Department.update(
+      { totalCount: userCount },
+      { where: { id: departmentId } }
+    );
+  }
+});
+
+// staff deleting
+const deleteStaff = async (req, res) => {
+  const { id } = req.params;
+  if (!id) return res.status(404).send("Id not found");
+  const user = await Users.findByPk(id);
+  if (!user) return res.status(404).send("User not found");
+  await user.destroy();
+  res.status(200).send("Delete Successfully!");
+};
+
+// Staff creating
+const createStaff = async (req, res) => {
   const {
     username,
     password,
@@ -17,8 +56,9 @@ const create = async (req, res) => {
     annualLeave,
     mediacalLeave,
     nrc,
+    departmentId,
   } = req.body;
-  const payload = {
+  const userData = {
     username: username || "staff",
     password: password || "staff@123",
     Email: email || "staff@gmail.com",
@@ -34,12 +74,11 @@ const create = async (req, res) => {
     AnnualLeave: annualLeave || 1,
     MedicalLeave: mediacalLeave || 1,
     NRC: nrc || "12/DPN(N)983829",
+    DepartmentId: departmentId || 1,
   };
 
-  if (!payload) return res.status(200).send("Successful");
-
-  await Users.create(payload);
-  res.status(200).send("Created");
+  await Users.create(userData);
+  res.status(200).send("Successfully Created");
 };
 
-module.exports = { create };
+module.exports = { createStaff, deleteStaff };

@@ -6,12 +6,12 @@ module.exports = (sequelize, DataType) => {
     },
     totalCount: {
       type: DataType.INTEGER,
-      allowNull: true,
+      defaultValue: 0,
     },
   });
 
   Department.associate = (models) => {
-    Department.hasOne(models.Users);
+    Department.hasMany(models.Users);
   };
   return Department;
 };

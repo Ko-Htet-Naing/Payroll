@@ -8,14 +8,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TIME,
       allowNull: false,
     },
-    late_in: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    early_out: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     date: {
       type: DataTypes.DATEONLY,
       allowNull: false,

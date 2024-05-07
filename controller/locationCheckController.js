@@ -1,16 +1,7 @@
 const haversine = require("haversine");
 
-let locationRange = 70;
+let locationRange = 1000;
 
-const start = {
-  latitude: 16.816512365626778,
-  longitude: 96.12863369856154,
-};
-
-const end = {
-  latitude: 16.817051150808854,
-  longitude: 96.12902680357375,
-};
 // Set Range by HR
 const setlocationAuth = (req, res) => {
   const range = req.body;
@@ -20,8 +11,19 @@ const setlocationAuth = (req, res) => {
 };
 
 const locationAuth = (req, res) => {
-  const location = req.body;
-  if (!location) return res.status(404).send("Locations Not Found");
+  const { lat, lon } = req.body;
+  if (!lat && !lon) return res.status(404).send("Lat or Lon Missing");
+  const start = {
+    latitude: lat || 16.81709781404742,
+    longitude: lon || 96.12951985255191,
+  };
+
+  const end = {
+    latitude: 16.81669722489963,
+    longitude: 96.12860150837099,
+  };
+
+  res.json(haversine(start, end, { threshold: locationRange, unit: "meter" }));
   console.log(
     haversine(start, end, { threshold: locationRange, unit: "meter" })
   );

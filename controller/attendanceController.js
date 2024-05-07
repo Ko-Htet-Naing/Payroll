@@ -22,7 +22,7 @@ const createAttendance = async (req, res) => {
     const endTime = moment("16:45", "HH:mm");
     console.log("beginning Time", beginningTime);
     console.log("end time", endTime);
-    const timeLimit = 30;
+    const timeLimit = 0;
 
     //convert inTime and outTime to moment objects
     const inTimeMoment = moment(in_time, "HH:mm:ss");
@@ -47,8 +47,6 @@ const createAttendance = async (req, res) => {
       const newAttendance = await Attendance.create({
         in_time,
         out_time,
-        late_in,
-        early_out,
         date,
         UserId,
       });

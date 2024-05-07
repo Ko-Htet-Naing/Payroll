@@ -16,15 +16,17 @@ const setlocationAuth = (req, res) => {
   const range = req.body;
   if (!range) return res.sendStatus(404);
   locationRange = range;
-  console.log(locationRange);
 };
 
 const locationAuth = (req, res) => {
-  const location = req.body;
-  if (!location) return res.status(404).send("Locations Not Found");
-  console.log(
-    haversine(start, end, { threshold: locationRange, unit: "meter" })
-  );
+  const { Lat, Lon } = req.body;
+  if (!Lat && !Lon) return res.status(404).send("Locations Not Found");
+  const isValid = haversine(Lat, Lon, {
+    threshold: locationRange,
+    unit: "meter",
+  });
+
+  res.status(200).send({ Status: isValid });
 };
 
 module.exports = {

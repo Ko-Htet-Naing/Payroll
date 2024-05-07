@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 // middleware
 app.use(express.json());
-app.use(express.urlencoded());
+app.use(express.urlencoded({ extended: false }));
 
 // Routes API
 app.use("/api/v1/mapCheck", authLocation);

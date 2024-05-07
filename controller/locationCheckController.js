@@ -23,7 +23,9 @@ const locationAuth = (req, res) => {
     longitude: 96.12860150837099,
   };
 
-  res.json(haversine(start, end, { threshold: locationRange, unit: "meter" }));
+  res
+    .status(201)
+    .json(haversine(start, end, { threshold: locationRange, unit: "meter" }));
   console.log(
     haversine(start, end, { threshold: locationRange, unit: "meter" })
   );

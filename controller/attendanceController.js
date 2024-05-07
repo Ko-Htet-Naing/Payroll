@@ -1,6 +1,36 @@
 const moment = require("moment");
-//const { format } = require("date-fn");
 const { Attendance } = require("../models");
+
+const getAttendance = async (req, res) => {
+  const pageAsNumber = Number.parseInt(req.query.page);
+  const sizeAsNumber = Number.parseInt(req.query.size);
+
+  let page = 0;
+  if (!Number.isNaN(pageAsNumber) && pageAsNumber > 0) {
+    page = pageAsNumber;
+  }
+
+  // show 10 attendances
+  let size = 10;
+  if (
+    !Number.isNaN(sizeAsNumber) &&
+    !(sizeAsNumber > 10) &&
+    !(sizeAsNumber < 1)
+  ) {
+    size = sizeAsNumber;
+  }
+
+  // pagination
+
+  const attendanceWithCount = await Attendance.findAndCountAll({
+    limit: size,
+    offset: page * size,
+  });
+  res.send({
+    content: attendanceWithCount.rows,
+    totalPages: Math.ceil(attendanceWithCount.count / Number.parseInt(size)),
+  });
+};
 
 const createAttendance = async (req, res) => {
   console.log("time", moment().format("MMMM Do YYYY, h:mm:ss a"));
@@ -41,9 +71,9 @@ const createAttendance = async (req, res) => {
     console.log(earlyOutTime);
 
     if (lateInTime <= timeLimit && earlyOutTime <= timeLimit) {
-      const late_in = lateInTime.toString();
+      // const late_in = lateInTime.toString();
 
-      const early_out = earlyOutTime.toString();
+      // const early_out = earlyOutTime.toString();
       const newAttendance = await Attendance.create({
         in_time,
         out_time,
@@ -61,4 +91,4 @@ const createAttendance = async (req, res) => {
     console.error(error);
   }
 };
-module.exports = { createAttendance };
+module.exports = { createAttendance, getAttendance };

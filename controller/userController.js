@@ -1,20 +1,19 @@
 const { Users, Department } = require("../models");
 const admin = require("firebase-admin");
+const { getStorage, ref, getDownloadURL } = require("firebase/storage");
 
 // Initialize Firebase Admin SDK with my service account credentials
-const serviceAccount = require("../privateKey/backend-image-store-firebase-adminsdk-a5p7t-0ff1a81ecd.json");
+const serviceAccount = require("../private/imagestorage-2095c-firebase-adminsdk-ehic7-f0929e1d93.json");
 
 // Initialize app with admin variable
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  storageBucket: "gs://backend-image-store.appspot.com",
+  storageBucket: "gs://imagestorage-2095c.appspot.com",
 });
 
 // Hook to synchronize user after user are inserted
 Users.addHook("afterCreate", async (user, options) => {
-  console.log("I am in after Create");
   const departmentId = user.DepartmentId;
-  console.log(departmentId);
   if (departmentId) {
     const userCount = await Users.count({
       where: { DepartmentId: departmentId },
@@ -28,7 +27,6 @@ Users.addHook("afterCreate", async (user, options) => {
 
 // Hook to synchronize after delete user
 Users.addHook("afterDestroy", async (deletedUser, options) => {
-  console.log("I am in after Destroy");
   const departmentId = deletedUser.DepartmentId;
   if (departmentId) {
     const userCount = await Users.count({

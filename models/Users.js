@@ -62,5 +62,10 @@ module.exports = (sequelize, DataType) => {
     },
   });
 
+  Users.associate = (models) => {
+    Users.hasMany(models.Attendance);
+    Users.hasMany(models.LeaveRecord);
+  };
+
   return Users;
 };

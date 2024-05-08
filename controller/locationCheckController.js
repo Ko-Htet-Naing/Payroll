@@ -7,7 +7,6 @@ const setlocationAuth = (req, res) => {
   const range = req.body;
   if (!range) return res.sendStatus(404);
   locationRange = range;
-  console.log(locationRange);
 };
 
 const locationAuth = (req, res) => {
@@ -23,12 +22,11 @@ const locationAuth = (req, res) => {
     longitude: 96.12860150837099,
   };
 
-  res
-    .status(201)
-    .json(haversine(start, end, { threshold: locationRange, unit: "meter" }));
-  console.log(
-    haversine(start, end, { threshold: locationRange, unit: "meter" })
-  );
+  const isValid = haversine(start, end, {
+    threshold: locationRange,
+    unit: "meter",
+  });
+  res.status(200).json({ isValid: isValid });
 };
 
 module.exports = {

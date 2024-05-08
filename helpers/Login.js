@@ -1,11 +1,10 @@
 const { Users } = require("../models");
-const { comparePassword } = require("../helpers/Auth");
 const jwt = require("jsonwebtoken");
-require("dotenv").config();
+const { comparePassword } = require("./Hash");
 
+// login Section With JWT
 const login = async (req, res) => {
   let { username, password } = req.body;
-  console.log(username, password);
   const user = await Users.findOne({
     where: { username: username },
   });
@@ -14,7 +13,8 @@ const login = async (req, res) => {
     password,
     user.dataValues.password
   );
-  if (!dbComparePassword) res.status(401).send({ message: "Wrong Password" });
+  if (!dbComparePassword)
+    return res.status(401).send({ message: "Wrong Password" });
   const dbUsername = user.dataValues.username;
   const role = user.dataValues.role;
 
@@ -22,7 +22,7 @@ const login = async (req, res) => {
   const accessToken = jwt.sign(
     { UserInfo: { username: dbUsername, role: role } },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "6m" }
+    { expiresIn: "1m" }
   );
   const refreshToken = jwt.sign(
     {
@@ -31,7 +31,7 @@ const login = async (req, res) => {
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: "1d" }
   );
-  // Reset User
+  // Update Refresh Token Data
   await Users.update(
     { refreshToken: refreshToken },
     { where: { username: dbUsername } }
@@ -44,7 +44,6 @@ const login = async (req, res) => {
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
   });
-
   res.json({
     token: accessToken,
     username: user.username,
@@ -52,6 +51,4 @@ const login = async (req, res) => {
   });
 };
 
-module.exports = {
-  login,
-};
+module.exports = login;

@@ -74,11 +74,41 @@ const createStaff = async (req, res) => {
     AnnualLeave: annualLeave || 1,
     MedicalLeave: mediacalLeave || 1,
     NRC: nrc || "12/DPN(N)983829",
-    DepartmentId: departmentId || 1,
+    DepartmentId: departmentId || 3,
   };
 
   await Users.create(userData);
   res.status(200).send("Successfully Created");
 };
 
-module.exports = { createStaff, deleteStaff };
+const getUserList = async (req, res) => {
+  const pageAsNumber = Number.parseInt(req.query.page);
+  const sizeAsNumber = Number.parseInt(req.query.size);
+
+  let page = 0;
+  if (!Number.isNaN(pageAsNumber) && pageAsNumber > 0) {
+    page = pageAsNumber;
+  }
+
+  // show 10 attendances
+  let size = 10;
+  if (
+    !Number.isNaN(sizeAsNumber) &&
+    !(sizeAsNumber > 10) &&
+    !(sizeAsNumber < 1)
+  ) {
+    size = sizeAsNumber;
+  }
+
+  userWithCount = await Users.findAndCountAll({
+    limit: size,
+    offset: page * size,
+  });
+
+  res.send({
+    // attendance: attendanceWithCount,
+    content: userWithCount.rows,
+    totalPages: Math.ceil(userWithCount.count / Number.parseInt(size)),
+  });
+};
+module.exports = { createStaff, deleteStaff, getUserList };

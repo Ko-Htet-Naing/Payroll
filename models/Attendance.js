@@ -13,6 +13,8 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
   });
-
+  Attendance.associate = (models) => {
+    Attendance.belongsTo(models.Users, { foreignKey: "UserId" });
+  };
   return Attendance;
 };

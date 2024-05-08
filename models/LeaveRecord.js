@@ -21,6 +21,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
+    attachmentUrl: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   });
 
   return LeaveRecord;

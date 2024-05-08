@@ -2,6 +2,7 @@ const { Users } = require("../models");
 
 const logout = async (req, res) => {
   const cookie = req.cookies;
+  console.log(cookie);
   if (!cookie?.jwt_ref)
     return res.status(400).send({ message: "You already Logout" });
   const foundUser = await Users.findOne({
@@ -24,4 +25,4 @@ const logout = async (req, res) => {
   res.status(200).send("Successfully Logout!");
 };
 
-module.exports = { logout };
+module.exports = logout;

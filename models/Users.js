@@ -60,6 +60,14 @@ module.exports = (sequelize, DataType) => {
       type: DataType.STRING,
       allowNull: false,
     },
+    Department: {
+      type: DataType.STRING,
+      allowNull: false,
+    },
+    refreshToken: {
+      type: DataType.STRING,
+      allowNull: true,
+    },
   });
 
   Users.associate = (models) => {

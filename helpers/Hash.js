@@ -1,5 +1,5 @@
 const bcrypt = require("bcrypt");
-const saltRound = 10;
+const saltRound = 3;
 
 const hashPassword = (password) => {
   return new Promise((resolve, reject) => {

@@ -1,9 +1,13 @@
 const { Users, Department } = require("../models");
 const admin = require("firebase-admin");
-const { getStorage, ref, getDownloadURL } = require("firebase/storage");
+
+const { hashPassword, comparePassword } = require("../helpers/Hash");
+
+require("dotenv").config();
 
 // Initialize Firebase Admin SDK with my service account credentials
 const serviceAccount = require("../private/imagestorage-2095c-firebase-adminsdk-ehic7-f0929e1d93.json");
+const { refreshToken } = require("firebase-admin/app");
 
 // Initialize app with admin variable
 admin.initializeApp({
@@ -66,12 +70,37 @@ const createStaff = async (req, res) => {
     annualLeave,
     mediacalLeave,
     nrc,
-    departmentId,
+    departmentName,
   } = req.body;
+  const profileImage = req.file;
+
+  // Check data exists
+  // if (
+  //   !username ||
+  //   !password ||
+  //   !email ||
+  //   !gender ||
+  //   !role ||
+  //   !position ||
+  //   !employeeId ||
+  //   !payroll ||
+  //   !dob ||
+  //   !phoneNumber ||
+  //   !address ||
+  //   !annualLeave ||
+  //   !mediacalLeave ||
+  //   !nrc ||
+  //   !departmentName
+  // )
+  //   return res.status(400).send("Missing Credential");
+  // Check Also for profile image exists
+  // if (!profileImage) return res.status(404).send("Upload File Not Found");
+  const hashedPassword = await hashPassword("password");
+  const { id } = await Department.findOne({
+    where: { deptName: "Software" },
+  });
 
   // Upload Image to Firebase
-  const profileImage = req.file;
-  if (!profileImage) return res.status(404).send("Upload File Not Found");
   // Variable to store upload URL
   let imageUrl = "";
   try {
@@ -92,7 +121,7 @@ const createStaff = async (req, res) => {
       // Create user data with the file URL
       const userData = {
         username: username || "staff",
-        password: password || "staff@123",
+        password: hashedPassword || "admin@123",
         Email: email || "staff@gmail.com",
         Gender: gender || "male",
         Role: role || 5000,
@@ -106,7 +135,9 @@ const createStaff = async (req, res) => {
         AnnualLeave: annualLeave || 1,
         MedicalLeave: mediacalLeave || 1,
         NRC: nrc || "12/DPN(N)983829",
-        DepartmentId: departmentId || 1,
+        Department: departmentName || "Software",
+        refreshToken: null,
+        DepartmentId: id || 1,
       };
 
       // Create the user with the user data
@@ -129,7 +160,5 @@ const createStaff = async (req, res) => {
     res.status(500).send("Failed to upload image");
   }
 };
-
-module.exports = { createStaff, deleteStaff };
 
 module.exports = { createStaff, deleteStaff };

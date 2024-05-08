@@ -95,19 +95,10 @@ const { Attendance, Users } = require("../models");
 
 const getAttendance = async (req, res) => {
   const listOfAttendance = await Attendance.findAll({
-    include: [{ model: Users }],
+    include: [{ model: Users, attributes: ["username"] }],
   });
-  console.log("listOfAttendance", listOfAttendance);
 
-  const formattedAttendance = listOfAttendance.map((record) => ({
-    id: record.id,
-    in_time: record.in_time,
-    out_time: record.out_time,
-    date: record.date,
-    user: { data: record.Users },
-  }));
-
-  res.json(formattedAttendance);
+  res.json(listOfAttendance);
 };
 
 const createAttendance = async (req, res) => {

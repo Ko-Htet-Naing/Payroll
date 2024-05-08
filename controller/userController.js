@@ -137,14 +137,14 @@ const createStaff = async (req, res) => {
         NRC: nrc || "12/DPN(N)983829",
         Department: departmentName || "Software",
         refreshToken: null,
-        DepartmentId: id || 1,
+        DepartmentId: id || 3,
       };
 
       // Create the user with the user data
       await Users.create(userData);
 
       // Send success response
-      res.status(200).send("Successfully Created");
+      res.status(200).send({ username: userData.username });
     });
 
     // Handle upload error

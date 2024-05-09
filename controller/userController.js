@@ -120,7 +120,7 @@ const createStaff = async (req, res) => {
 
       // Create user data with the file URL
       const userData = {
-        username: username || "staff",
+        username: username || "ayecho",
         password: hashedPassword || "admin@123",
         Email: email || "staff@gmail.com",
         Gender: gender || "male",

@@ -60,10 +60,6 @@ module.exports = (sequelize, DataType) => {
       type: DataType.STRING,
       allowNull: false,
     },
-    Department: {
-      type: DataType.STRING,
-      allowNull: false,
-    },
     refreshToken: {
       type: DataType.STRING,
       allowNull: true,
@@ -72,7 +68,8 @@ module.exports = (sequelize, DataType) => {
 
   Users.associate = (models) => {
     Users.hasMany(models.Attendance, { foreignKey: "UserId" });
-    Users.hasMany(models.LeaveRecord);
+    Users.hasMany(models.LeaveRecord, { foreignKey: "UserId" });
+    Users.belongsTo(models.Department, { foreignKey: "DepartmentId" });
   };
 
   return Users;

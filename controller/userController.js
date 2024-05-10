@@ -2,6 +2,7 @@ const { Users, Department } = require("../models");
 const admin = require("firebase-admin");
 
 const { hashPassword, comparePassword } = require("../helpers/Hash");
+const { Op, or } = require("sequelize");
 
 require("dotenv").config();
 
@@ -70,6 +71,7 @@ const createStaff = async (req, res) => {
     annualLeave,
     mediacalLeave,
     nrc,
+    departmentId,
     departmentName,
   } = req.body;
   const profileImage = req.file;
@@ -96,9 +98,9 @@ const createStaff = async (req, res) => {
   // Check Also for profile image exists
   // if (!profileImage) return res.status(404).send("Upload File Not Found");
   const hashedPassword = await hashPassword("password");
-  const { id } = await Department.findOne({
-    where: { deptName: "Software" },
-  });
+  // const { id } = await Department.findOne({
+  //   where: { deptName: "Software" },
+  // });
 
   // Upload Image to Firebase
   // Variable to store upload URL
@@ -126,7 +128,7 @@ const createStaff = async (req, res) => {
         Gender: gender || "male",
         Role: role || 5000,
         Position: position || "L1",
-        EmployeeId: employeeId || 1111,
+        EmployeeId: employeeId || 3333,
         Payroll: payroll || 40000,
         ProfileImage: imageUrl || null,
         DOB: dob || "12-2-2000",
@@ -135,9 +137,9 @@ const createStaff = async (req, res) => {
         AnnualLeave: annualLeave || 1,
         MedicalLeave: mediacalLeave || 1,
         NRC: nrc || "12/DPN(N)983829",
-        Department: departmentName || "Software",
+        //Department: departmentName || "Software",
         refreshToken: null,
-        DepartmentId: id || 3,
+        DepartmentId: departmentId || 1,
       };
 
       // Create the user with the user data
@@ -161,9 +163,13 @@ const createStaff = async (req, res) => {
   }
 };
 
-const getUserList = async (req, res) => {
+const getUserList = async (req, res, next) => {
   const pageAsNumber = Number.parseInt(req.query.page);
   const sizeAsNumber = Number.parseInt(req.query.size);
+
+  const position = req.query.position;
+  const username = req.query.username;
+  const sort = req.query.sort;
 
   let page = 0;
   if (!Number.isNaN(pageAsNumber) && pageAsNumber > 0) {
@@ -180,15 +186,40 @@ const getUserList = async (req, res) => {
     size = sizeAsNumber;
   }
 
-  userWithCount = await Users.findAndCountAll({
-    limit: size,
-    offset: page * size,
-  });
+  const totalCount = await Users.count();
+  const totalPage = Math.ceil(totalCount / size);
 
-  res.send({
-    // attendance: attendanceWithCount,
-    content: userWithCount.rows,
-    totalPages: Math.ceil(userWithCount.count / Number.parseInt(size)),
-  });
+  try {
+    let whereClause = {};
+    // filter by position
+    if (position) {
+      whereClause = {
+        Position: position,
+      };
+    }
+
+    // search by username
+    if (username) {
+      whereClause = {
+        username: { [Op.like]: `%${username}%` },
+      };
+    }
+
+    // sort by EmployeeId
+    const order = sort === "EmployeeId" ? [["EmployeeId", "DESC"]] : [];
+    const users = await Users.findAll({
+      where: whereClause,
+      include: [{ model: Department, attributes: ["DeptName"] }],
+      order: order,
+      limit: size,
+      offset: page * size,
+    });
+
+    res.status(200).json({ data: users, totalPage, totalCount });
+  } catch (error) {
+    next();
+    console.error(error);
+  }
 };
+
 module.exports = { createStaff, deleteStaff, getUserList };

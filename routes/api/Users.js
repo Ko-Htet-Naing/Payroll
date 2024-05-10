@@ -22,6 +22,7 @@ const upload = multer({
 });
 
 router.post("/createUser", upload.single("profileImage"), user.createStaff);
+router.get("/", user.getUserList);
 
 router.post("/loginUser", login);
 router.post("/resetPassword", ResetPassword);

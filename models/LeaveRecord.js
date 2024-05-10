@@ -27,5 +27,8 @@ module.exports = (sequelize, DataTypes) => {
     },
   });
 
+  LeaveRecord.associate = (models) => {
+    LeaveRecord.belongsTo(models.Users, { foreignKey: "UserId" });
+  };
   return LeaveRecord;
 };

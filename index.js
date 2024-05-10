@@ -10,6 +10,8 @@ const cookieParser = require("cookie-parser");
 const verifyJWT = require("./middleware/verifyJWT");
 
 const attendance = require("./routes/api/attendance");
+
+const leaveRecord = require("./routes/api/leaveRecords");
 const db = require("./models");
 
 require("dotenv").config();
@@ -30,7 +32,7 @@ app.use("/api/v1/mapCheck", authLocation);
 app.use("/api/v1/users", user);
 app.use("/api/v1/departments", department);
 app.use("/api/v1/attendance", attendance);
-
+app.use("/api/v1/leaveRecord", leaveRecord);
 // For Regenerating Access Token
 app.use("/api/v1/refresh", handleRefresh);
 

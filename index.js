@@ -35,7 +35,7 @@ app.use("/api/v1/attendance", attendance);
 app.use("/api/v1/refresh", handleRefresh);
 
 // Just for testing purpose
-app.use(verifyJWT);
+// app.use(verifyJWT);
 app.use("/api/v1/test", testRoute);
 
 // For handling unknown request

@@ -1,9 +1,7 @@
-const { Router } = require("express");
-const locationCheckController = require("../../controller/locationCheckController");
+const router = require("express").Router();
+const locationController = require("../../controller/locationController");
 
-const router = Router();
-
-router.post("/", locationCheckController.locationAuth);
-router.post("/setRange", locationCheckController.setlocationAuth);
-
+router.post("/sendDateTime", locationController.getAuthenticateDateAndTime);
+router.post("/", locationController.locationAuth);
+router.post("/setRange", locationController.setlocationAuth);
 module.exports = router;

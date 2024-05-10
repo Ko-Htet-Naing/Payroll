@@ -5,6 +5,9 @@ const { comparePassword } = require("./Hash");
 // login Section With JWT
 const login = async (req, res) => {
   let { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(404).send("Username and Password Not Found");
+  }
   const user = await Users.findOne({
     where: { username: username },
   });

@@ -2,11 +2,11 @@ module.exports = (sequelize, DataTypes) => {
   const Attendance = sequelize.define("Attendance", {
     in_time: {
       type: DataTypes.TIME,
-      allowNull: false,
+      allowNull: true,
     },
     out_time: {
       type: DataTypes.TIME,
-      allowNull: false,
+      allowNull: true,
     },
     date: {
       type: DataTypes.DATEONLY,

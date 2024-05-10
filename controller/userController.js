@@ -1,7 +1,7 @@
 const { Users, Department } = require("../models");
 const admin = require("firebase-admin");
 
-const { hashPassword, comparePassword } = require("../helpers/Hash");
+const { hashPassword } = require("../helpers/Hash");
 
 require("dotenv").config();
 

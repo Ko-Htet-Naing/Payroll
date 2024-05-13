@@ -49,7 +49,8 @@ const getAuthenticateDateAndTime = async (req, res) => {
 
   // check AMPM with function
   const checkAMPM = (dateTimeString) => {
-    const momentObj = format(dateTimeString, "yyyy-M-d HH:mm:ss");
+    const dateObj = format(dateTimeString, "yyyy-MM-dd HH:mm:ss");
+
     // hour = momentObj.hour();
     // minute = momentObj.minutes();
     // if (hour < 12) {
@@ -57,14 +58,18 @@ const getAuthenticateDateAndTime = async (req, res) => {
     // } else {
     //   return "PM";
     // }
-    return momentObj;
+    return dateObj;
   };
-
+  const generateCurrentTime = () => {
+    const currentDate = new Date();
+    const formattedDate = format(currentDate, "yyyy-MM-dd HH:mm:ss");
+    return formattedDate;
+  };
   // const userArrivalDate = dateTime.split(" ")[0];
   // const userArrivalTime = dateTime.split(" ")[1];
 
   console.log(checkAMPM(dateTime));
-
+  console.log(generateCurrentTime());
   // const checkTimeStatus = checkAMPM(dateTime); // check for AM and PM
   // if (checkTimeStatus === "AM") {
   // if (hour <= 8 && minute <= 45) {

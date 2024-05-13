@@ -12,6 +12,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
+    late_in_time: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
   });
   Attendance.associate = (models) => {
     Attendance.belongsTo(models.Users, { foreignKey: "UserId" });

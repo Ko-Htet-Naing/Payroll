@@ -2,6 +2,7 @@ const { Users, Department } = require("../models");
 const admin = require("firebase-admin");
 
 const { hashPassword, comparePassword } = require("../helpers/Hash");
+const { Op, or } = require("sequelize");
 
 require("dotenv").config();
 
@@ -121,14 +122,14 @@ const createStaff = async (req, res) => {
 
       // Create user data with the file URL
       const userData = {
-        username: username || "ayecho",
+        username: username || "Kyaw Kyaw",
         password: hashedPassword || "admin@123",
         Email: email || "staff@gmail.com",
-        Gender: gender || "male",
+        Gender: gender || "fmale",
         Role: role || 5000,
-        Position: position || "L1",
-        EmployeeId: employeeId || 3333,
-        Payroll: payroll || 40000,
+        Position: position || "L2",
+        EmployeeId: employeeId || 2222,
+        Payroll: payroll || 50000,
         ProfileImage: imageUrl || null,
         DOB: dob || "12-2-2000",
         PhoneNumber: phoneNumber || 22222,
@@ -205,7 +206,8 @@ const getUserList = async (req, res, next) => {
     }
 
     // sort by EmployeeId
-    const order = sort === "EmployeeId" ? [["EmployeeId", "DESC"]] : [];
+    const order = [["EmployeeId", "ASC"]];
+    //const order = sort === "EmployeeId" ? [["EmployeeId", "DESC"]] : [];
     const users = await Users.findAll({
       where: whereClause,
       include: [{ model: Department, attributes: ["DeptName"] }],

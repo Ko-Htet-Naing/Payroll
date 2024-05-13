@@ -25,7 +25,7 @@ module.exports = (sequelize, DataType) => {
       allowNull: false,
     },
     EmployeeId: {
-      type: DataType.INTEGER,
+      type: DataType.STRING,
       allowNull: false,
     },
     Payroll: {
@@ -56,6 +56,10 @@ module.exports = (sequelize, DataType) => {
       type: DataType.INTEGER,
       allowNull: false,
     },
+    AttendanceLeave: {
+      type: DataType.INTEGER,
+      allowNull: false,
+    },
     NRC: {
       type: DataType.STRING,
       allowNull: false,
@@ -70,6 +74,7 @@ module.exports = (sequelize, DataType) => {
     Users.hasMany(models.Attendance, { foreignKey: "UserId" });
     Users.hasMany(models.LeaveRecord, { foreignKey: "UserId" });
     Users.belongsTo(models.Department, { foreignKey: "DepartmentId" });
+    Users.hasMany(models.Attendance_Record, { foreignKey: "UserId" });
   };
 
   return Users;

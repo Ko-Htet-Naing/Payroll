@@ -70,6 +70,7 @@ const createStaff = async (req, res) => {
     address,
     annualLeave,
     mediacalLeave,
+    attendanceLeave,
     nrc,
     departmentId,
     departmentName,

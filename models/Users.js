@@ -53,7 +53,7 @@ module.exports = (sequelize, DataType) => {
       allowNull: false,
     },
     MedicalLeave: {
-      type: DataType.INTEGER,
+      type: DataType.FLOAT,
       allowNull: false,
     },
     AttendanceLeave: {

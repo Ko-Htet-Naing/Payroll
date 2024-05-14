@@ -1,28 +1,19 @@
 const { DATE } = require("sequelize");
 const { LeaveRecord, Users, Department } = require("../models");
+const moment = require("moment");
 const createLeave = async (req, res) => {
   const { reasons, leaveType, from, to, UserId } = req.body;
 
   const leaveRecords = {
     reasons: reasons || "illness",
     leaveType: leaveType || "Medical Leave",
-    from: from || "2024-5-1",
-    to: to || "2024-5-8",
+    from: from || "2024-5-10",
+    to: to || "2024-5-10",
     UserId: UserId || 1,
   };
 
-  const fromdate = new Date(from);
-  const todate = new Date(to);
-
-  // Calculate the difference in milliseconds
-  const differenceMs = todate.getTime() - fromdate.getTime();
-
-  // Convert milliseconds to days
-  const leaveDays = Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
-  console.log("Leave days", leaveDays + 1);
-
   await LeaveRecord.create(leaveRecords);
-  res.status(201).json("Leave created", { leaveDays: leaveDays });
+  res.status(201).json("Leave created");
 };
 
 const getLeaveList = async (req, res) => {
@@ -55,11 +46,102 @@ const updatedStatus = async (req, res) => {
       return res.status(404).json({ message: "Leave record not found" });
     }
 
+    const fromdate = leaveRecord.from;
+    const todate = leaveRecord.to;
+    console.log("from date", fromdate);
+    console.log("to date", todate);
+
+    console.log(isAfterThreeDays(fromdate));
+    console.log("leave days", calculateLeaveDays(fromdate, todate));
     leaveRecord.status = status;
+    console.log("leave status", leaveRecord.status);
+    if (leaveRecord.status === "Approved") {
+      console.log(leaveRecord.status === "Approved");
+      if (leaveRecord.leaveType === "Medical Leave") {
+        // medical leave ဖြစ်ရင်
+        if (Users.MedicalLeave === 0) {
+          // const users = await Users.findByPk(leaveRecord.UserId);
+          // users.MedicalLeave -= 1;
+          // await users.save();
+          leaveRecord.status = "Pending";
+          await leaveRecord.save();
+          return res.status(400).json({
+            message: "Do not have medical leave",
+          });
+        }
+        const users = await Users.findByPk(leaveRecord.UserId);
+        users.MedicalLeave -= 1;
+        await users.save();
+      } else if (leaveRecord.leaveType === "Annual Leave") {
+        // annual leave ဖြစ်ရင်
+        const leaveDays = calculateLeaveDays(fromdate, todate);
+        const users = await Users.findByPk(leaveRecord.UserId);
+
+        // 3ရက်  ကြိုပြီး leave တင်ရ မယ်
+        if (!isAfterThreeDays(fromdate)) {
+          leaveRecord.status = "Pending";
+          await leaveRecord.save();
+          return res.status(400).json({
+            message:
+              "Cannot apply annual leave, start date must be at least 3 days in the future",
+          });
+        }
+
+        if (leaveDays > Users.AnnualLeave) {
+          return res
+            .status(400)
+            .json({ message: "Insufficient annual leave balance" });
+        }
+
+        users.AnnualLeave -= leaveDays;
+        await users.save();
+      } else if (leaveRecord.leaveType === "Morning Leave") {
+        if (Users.MedicalLeave > 0) {
+          const users = await Users.findByPk(leaveRecord.UserId);
+          users.MedicalLeave -= 0.5;
+          await users.save();
+        }
+        leaveRecord.status = "Pending";
+        await leaveRecord.save();
+        return res.status(400).json({
+          message: "Do not have medical leave",
+        });
+      } else {
+        if (Users.MedicalLeave > 0) {
+          const users = await Users.findByPk(leaveRecord.UserId);
+          users.MedicalLeave -= 0.5;
+          await users.save();
+        }
+        leaveRecord.status = "Pending";
+        await leaveRecord.save();
+        return res.status(400).json({
+          message: "Do not have medical leave",
+        });
+      }
+    }
     await leaveRecord.save();
     res.status(200).json(leaveRecord);
   } catch (error) {
     console.error(error);
   }
+};
+
+const isAfterThreeDays = (dateToCheck) => {
+  const fromdate = moment(dateToCheck);
+  // Calculate the date 3 days from now
+  const threeDaysFromNow = moment().add(3, "days");
+  // Check if the provided date is after 3 days from now
+  const isAfter = fromdate.isAfter(threeDaysFromNow, "day");
+  return isAfter;
+};
+
+const calculateLeaveDays = (fromDate, toDate) => {
+  const start = moment(fromDate);
+  const end = moment(toDate);
+
+  // Calculate the difference in days
+  const leaveDays = end.diff(start, "days") + 1; // Adding 1 to include both the start and end dates
+
+  return leaveDays;
 };
 module.exports = { createLeave, getLeaveList, updatedStatus };

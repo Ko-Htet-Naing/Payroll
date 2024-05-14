@@ -104,20 +104,22 @@ const createAttendance = async (req, res) => {
 
     console.log(earlyOutTime);
 
-    if (lateInTime <= timeLimit && earlyOutTime <= timeLimit) {
-      const newAttendance = await Attendance.create({
-        in_time,
-        out_time,
-        date,
-        UserId,
-      });
+    // if (lateInTime <= timeLimit && earlyOutTime <= timeLimit) {
+    const newAttendance = await Attendance.create({
+      in_time,
+      out_time,
+      date,
+      late_in_time: lateInTime,
+      early_out_time: earlyOutTime,
+      UserId,
+    });
 
-      if (!newAttendance) return res.status(404).send("Attendance not found");
+    if (!newAttendance) return res.status(404).send("Attendance not found");
 
-      res.json({ message: "attendance created" });
-    } else {
-      res.json({ message: "absent" });
-    }
+    res.json({ message: "attendance created" });
+    // } else {
+    //   res.json({ message: "absent" });
+    // }
   } catch (error) {
     console.error(error);
   }

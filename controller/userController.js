@@ -70,6 +70,7 @@ const createStaff = async (req, res) => {
     address,
     annualLeave,
     mediacalLeave,
+    attendanceLeave,
     nrc,
     departmentId,
     departmentName,
@@ -122,7 +123,7 @@ const createStaff = async (req, res) => {
 
       // Create user data with the file URL
       const userData = {
-        username: username || "Kyaw Kyaw",
+        username: username || "Hnin Hnin",
         password: hashedPassword || "admin@123",
         Email: email || "staff@gmail.com",
         Gender: gender || "fmale",
@@ -134,8 +135,9 @@ const createStaff = async (req, res) => {
         DOB: dob || "12-2-2000",
         PhoneNumber: phoneNumber || 22222,
         Address: address || "Dawbon",
-        AnnualLeave: annualLeave || 1,
+        AnnualLeave: annualLeave || 2,
         MedicalLeave: mediacalLeave || 1,
+        AttendanceLeave: attendanceLeave || 3,
         NRC: nrc || "12/DPN(N)983829",
         //Department: departmentName || "Software",
         refreshToken: null,

@@ -7,6 +7,7 @@ const handleRefresh = require("./routes/api/refresh");
 const cors = require("cors");
 const corsOptions = require("./config/allowOrigin");
 const cookieParser = require("cookie-parser");
+const userCount = require("./routes/api/userCount");
 const verifyJWT = require("./middleware/verifyJWT");
 
 const attendance = require("./routes/api/attendance");
@@ -34,6 +35,7 @@ app.use("/api/v1/departments", department);
 app.use("/api/v1/attendance", attendance);
 app.use("/api/v1/leaveRecord", leaveRecord);
 app.use("/api/v1/attendanceRequest", attendanceRequest);
+app.use("/api/v1/userCount", userCount);
 // For Regenerating Access Token
 app.use("/api/v1/refresh", handleRefresh);
 

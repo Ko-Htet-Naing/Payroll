@@ -140,7 +140,7 @@ const createStaff = async (req, res) => {
     AttendanceLeave: 3,
     NRC: nrc || "12/DPN(N)983829",
     refreshToken: null,
-    DepartmentId: departmentId || 1,
+    DepartmentId: departmentId || 2,
   };
 
   // Create the user with the user data

@@ -1,38 +1,6 @@
-const haversine = require("haversine");
 const moment = require("moment");
-const { format, isSameDay, parse, differenceInSeconds } = require("date-fns");
+const { format, isSameDay, parse } = require("date-fns");
 const { Attendance } = require("../models");
-
-let locationRange = 1000;
-let isValid = null;
-
-// Set Range by HR
-const setlocationAuth = (req, res) => {
-  const range = req.body;
-  if (!range) return res.sendStatus(404);
-  locationRange = range;
-};
-
-// Location Auth
-const locationAuth = (req, res) => {
-  const { lat, lon } = req.body;
-  if (!lat && !lon) return res.status(404).send("Lat or Lon Missing");
-  const start = {
-    latitude: lat || 16.81709781404742,
-    longitude: lon || 96.12951985255191,
-  };
-
-  const end = {
-    latitude: 16.81669722489963,
-    longitude: 96.12860150837099,
-  };
-
-  isValid = haversine(start, end, {
-    threshold: locationRange,
-    unit: "meter",
-  });
-  res.status(200).json({ isValid: isValid });
-};
 
 // Get authenticate date and time
 const getAuthenticateDateAndTime = async (req, res) => {
@@ -66,7 +34,6 @@ const getAuthenticateDateAndTime = async (req, res) => {
   // Approved သာ ဖြစ်ခဲ့ရင် အချိန်ချိန်း Leave Type ပေါ်လည်း မူတည်
   // Morning Leave သာဖြစ်ခဲ့ရင် အလုပ်ချိန် 12:30 to 4:30
   // Evening Leave သာဖြစ်ခဲ့ရင် အလုပ်ချိန် 8:30 to 12:30
-
   const checkUserDateExistStatus = async (optionForDayNight) => {
     // User ရဲ့ in_time ကို မနက်ခင်းမှာ စစ်
     if (optionForDayNight === "AM") {
@@ -192,9 +159,4 @@ const getAuthenticateDateAndTime = async (req, res) => {
       }
     }
   }
-};
-module.exports = {
-  locationAuth,
-  setlocationAuth,
-  getAuthenticateDateAndTime,
 };

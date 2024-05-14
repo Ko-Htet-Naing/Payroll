@@ -16,6 +16,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
+    early_out_time: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
   });
   Attendance.associate = (models) => {
     Attendance.belongsTo(models.Users, { foreignKey: "UserId" });

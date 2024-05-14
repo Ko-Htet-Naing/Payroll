@@ -104,64 +104,65 @@ const createStaff = async (req, res) => {
 
   // Upload Image to Firebase
   // Variable to store upload URL
-  let imageUrl = "";
-  try {
-    // Upload file to Firebase Storage
-    const bucket = admin.storage().bucket();
-    const fileUpload = bucket.file(profileImage.originalname);
-    const stream = fileUpload.createWriteStream({
-      metadata: {
-        contentType: profileImage.mimetype,
-      },
-    });
+  // let imageUrl = "";
+  // try {
+  // Upload file to Firebase Storage
+  // const bucket = admin.storage().bucket();
+  // const fileUpload = bucket.file(profileImage.originalname);
+  // const stream = fileUpload.createWriteStream({
+  //   metadata: {
+  //     contentType: profileImage.mimetype,
+  //   },
+  // });
 
-    // Handle Successful upload
-    stream.on("finish", async () => {
-      // Get the uploaded image URL
-      imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileUpload.name}`;
+  // Handle Successful upload
+  // stream.on("finish", async () => {
+  //   // Get the uploaded image URL
+  //   imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileUpload.name}`;
 
-      // Create user data with the file URL
-      const userData = {
-        username: username || "Kyaw Kyaw",
-        password: hashedPassword || "admin@123",
-        Email: email || "staff@gmail.com",
-        Gender: gender || "fmale",
-        Role: role || 5000,
-        Position: position || "L2",
-        EmployeeId: employeeId || 2222,
-        Payroll: payroll || 50000,
-        ProfileImage: imageUrl || null,
-        DOB: dob || "12-2-2000",
-        PhoneNumber: phoneNumber || 22222,
-        Address: address || "Dawbon",
-        AnnualLeave: annualLeave || 1,
-        MedicalLeave: mediacalLeave || 1,
-        NRC: nrc || "12/DPN(N)983829",
-        //Department: departmentName || "Software",
-        refreshToken: null,
-        DepartmentId: departmentId || 1,
-      };
+  // Create user data with the file URL
+  const userData = {
+    username: username || "Kyaw Kyaw",
+    password: hashedPassword || "admin@123",
+    Email: email || "staff@gmail.com",
+    Gender: gender || "female",
+    Role: role || 5000,
+    Position: position || "L2",
+    EmployeeId: employeeId || 2222,
+    Payroll: payroll || 50000,
+    ProfileImage: "someImageLinkFromMobile" || null,
+    DOB: dob || "12-2-2000",
+    PhoneNumber: phoneNumber || 22222,
+    Address: address || "Dawbon",
+    AnnualLeave: annualLeave || 1,
+    MedicalLeave: mediacalLeave || 1,
+    AttendanceLeave: 3,
+    NRC: nrc || "12/DPN(N)983829",
+    refreshToken: null,
+    DepartmentId: departmentId || 1,
+  };
 
-      // Create the user with the user data
-      await Users.create(userData);
+  // Create the user with the user data
+  await Users.create(userData);
 
-      // Send success response
-      res.status(200).send({ username: userData.username });
-    });
+  // Send success response
+  res.status(200).send({ username: userData.username });
+  // });
 
-    // Handle upload error
-    stream.on("error", (err) => {
-      console.error("Error uploading file to Firebase Storage:", err);
-      res.status(500).send("Failed to upload image");
-    });
+  // Handle upload error
+  // stream.on("error", (err) => {
+  //   console.error("Error uploading file to Firebase Storage:", err);
+  //   res.status(500).send("Failed to upload image");
+  // });
 
-    // Pipe the file data to the Firebase Storage stream
-    stream.end(profileImage.buffer);
-  } catch (err) {
-    console.error("Error uploading file to Firebase Storage:", err);
-    res.status(500).send("Failed to upload image");
-  }
+  // Pipe the file data to the Firebase Storage stream
+  // stream.end(profileImage.buffer);
 };
+// catch (err) {
+//   console.error("Error uploading file to Firebase Storage:", err);
+//   res.status(500).send("Failed to upload image");
+// }
+// };
 
 const getUserList = async (req, res, next) => {
   const pageAsNumber = Number.parseInt(req.query.page);

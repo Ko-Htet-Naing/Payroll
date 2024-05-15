@@ -6,13 +6,6 @@ const { Attendance } = require("../models");
 let locationRange = 1000;
 let isValid = null;
 
-// Set Range by HR
-const setlocationAuth = (req, res) => {
-  const range = req.body;
-  if (!range) return res.sendStatus(404);
-  locationRange = range;
-};
-
 // Location Auth
 const locationAuth = (req, res) => {
   const { lat, lon } = req.body;
@@ -33,9 +26,36 @@ const locationAuth = (req, res) => {
   });
   res.status(200).json({ isValid: isValid });
 };
+// Set Range by HR
+const setlocationAuth = (req, res) => {
+  const range = req.body;
+  if (!range) return res.sendStatus(404);
+  locationRange = range;
+};
 
 // Get authenticate date and time
 const getAuthenticateDateAndTime = async (req, res) => {
+  // Predefined Date And Time Function
+  const getPredefinedDateAndTime = (chooseDayTime) => {
+    const date2 = moment();
+    const dateString = date2.format("YYYY-MM-DD");
+    const currentDate = dateString.split(" ")[0];
+    if (chooseDayTime === "AM") {
+      const customTime = "08:30:00";
+      return (myCustomDate = moment(`${currentDate}T${customTime}`));
+    }
+    if (chooseDayTime === "PM") {
+      const customTime = "16:30:00";
+      return (myCustomDate = moment(`${currentDate}T${customTime}`));
+    }
+  };
+  // User DB ထဲမှာ ရှိမရှိ စစ်တဲ့ function
+  const checkUserAlreadyExistsInDB = async (userId, currentDate) => {
+    const userExists = await Attendance.findOne({
+      where: { UserId: userId, date: currentDate },
+    });
+    return userExists ? true : false;
+  };
   // initiazlize var for hour and minute
   let hour = null;
   let minute = null;
@@ -53,10 +73,9 @@ const getAuthenticateDateAndTime = async (req, res) => {
     ? format(dateTime.split(" ")[0], "yyyy-MM-dd")
     : null;
   userArrivalTime = dateTime.split(" ")[1] ? dateTime.split(" ")[1] : null;
-
+  const currentDate = userArrivalDate;
   // Extract Hour Minute and Seconds
   const parseTime = parse(userArrivalTime, "HH:mm:ss", new Date());
-
   hour = parseTime.getHours();
   minute = parseTime.getMinutes();
   second = parseTime.getSeconds();
@@ -69,17 +88,31 @@ const getAuthenticateDateAndTime = async (req, res) => {
 
   const checkUserDateExistStatus = async (optionForDayNight) => {
     // User ရဲ့ in_time ကို မနက်ခင်းမှာ စစ်
+    // false ဆိုတာ User ကို ပေးလုပ်တာ ဖြစ်ပြီး
+    // true ဆိုတာ User ကို တားမြစ်တာ ဖြစ်ပါတယ်...
     if (optionForDayNight === "AM") {
       const userDayCheckIn = await Attendance.findOne({
         where: { UserId: userId },
-        attributes: ["in_time"],
+        attributes: ["in_time", "date"],
       });
       if (userDayCheckIn === null) {
         return false;
       }
-      if (userDayCheckIn.in_time === null) {
+      if (userDayCheckIn.date !== currentDate) {
+        // current date နဲ့ မညီရင်
+        let occurance = await Attendance.findOne({
+          where: { date: currentDate, UserId: userId },
+          attributes: ["in_time"],
+        });
+        if (occurance === null) {
+          // in_time ကို စစ် null ဖြစ်နေရင် false
+          return false;
+        } else if (occurance !== null) {
+          // in_time null မဖြစ်ရင် သူ check_in လုပ်ပြီးပြီဆိုတဲ့သဘော
+          return true;
+        }
         return false;
-      } else {
+      } else if (userDayCheckIn.date === currentDate) {
         return true;
       }
     }
@@ -87,30 +120,28 @@ const getAuthenticateDateAndTime = async (req, res) => {
     if (optionForDayNight === "PM") {
       const userNightCheckIn = await Attendance.findOne({
         where: { UserId: userId },
-        attributes: ["out_time"],
+        attributes: ["out_time", "date"],
       });
       if (userNightCheckIn === null) {
         return false;
       }
-      if (userNightCheckIn.out_time === null) {
+      if (userNightCheckIn.date !== currentDate) {
+        // current date နဲ့ မညီရင်
+        let occurance = await Attendance.findOne({
+          where: { date: currentDate, UserId: userId },
+          attributes: ["out_time"],
+        });
+        if (occurance.out_time === null) {
+          // in_time ကို စစ် null ဖြစ်နေရင် false
+          return false;
+        } else if (occurance.out_time !== null) {
+          // in_time null မဖြစ်ရင် သူ check_in လုပ်ပြီးပြီဆိုတဲ့သဘော
+          return true;
+        }
         return false;
-      } else {
+      } else if (userNightCheckIn.date === currentDate) {
         return true;
       }
-    }
-  };
-
-  const getPredefinedDateAndTime = (chooseDayTime) => {
-    const date2 = moment();
-    const dateString = date2.format("YYYY-MM-DD");
-    const currentDate = dateString.split(" ")[0];
-    if (chooseDayTime === "AM") {
-      const customTime = "08:30:00";
-      return (myCustomDate = moment(`${currentDate}T${customTime}`));
-    }
-    if (chooseDayTime === "PM") {
-      const customTime = "16:30:00";
-      return (myCustomDate = moment(`${currentDate}T${customTime}`));
     }
   };
 
@@ -122,14 +153,24 @@ const getAuthenticateDateAndTime = async (req, res) => {
     if (checkMorningEveningStatus === "AM") {
       if (hour <= 8 && minute <= 30) {
         // အချိန်မှီရောက်လာရင်
-        if (await checkUserDateExistStatus("AM"))
-          return res.status(401).send("You already check in for morning");
-        await Attendance.create({
-          in_time: userArrivalTime,
-          date: userArrivalDate,
-          UserId: userId,
-        });
-        return res.status(200).send({ success: true });
+        if (await checkUserAlreadyExistsInDB(userId, currentDate)) {
+          await Attendance.update(
+            {
+              in_time: userArrivalTime,
+            },
+            { where: { UserId: userId, date: currentDate } }
+          );
+          return res.status(200).send({ success: true });
+        } else {
+          if (await checkUserDateExistStatus("AM"))
+            return res.status(401).send("You already check in for morning");
+          await Attendance.create({
+            in_time: userArrivalTime,
+            date: userArrivalDate,
+            UserId: userId,
+          });
+          return res.status(200).send({ success: true });
+        }
       }
       if (hour >= 8 && minute > 30) {
         // Leave ရှိလား မရှိဘူးလား
@@ -138,20 +179,31 @@ const getAuthenticateDateAndTime = async (req, res) => {
           return res.status(401).send("You already check in for morning");
         const currentDate = getPredefinedDateAndTime("AM");
         const lateInTime = moment(dateTime).diff(currentDate, "minutes");
-        await Attendance.create({
-          in_time: userArrivalTime,
-          late_in_time: lateInTime,
-          date: userArrivalDate,
-          UserId: userId,
-        });
-        return res.status(200).send({ success: true });
+
+        // record ရှိမရှိ အရင် စစ်မယ် မရှိမှ create လုပ်မယ် ရှိရင် update လုပ်မယ်...
+        if (await checkUserAlreadyExistsInDB(userId, currentDate)) {
+          await Attendance.update(
+            {
+              in_time: userArrivalTime,
+            },
+            { where: { UserId: userId, date: currentDate } }
+          );
+          return res.status(200).send({ success: true });
+        } else {
+          // record လုံးဝ အသစ်ဆိုရင်
+          await Attendance.create({
+            in_time: userArrivalTime,
+            late_in_time: lateInTime,
+            date: userArrivalDate,
+            UserId: userId,
+          });
+          return res.status(200).send({ success: true });
+        }
       }
     } else if (checkMorningEveningStatus === "PM") {
+      const currentDate = getPredefinedDateAndTime("AM");
       // user ကို အရင် ရှာ
-      const findUserInDb = await Attendance.findOne({
-        where: { userId: userId },
-      });
-      if (findUserInDb == null) {
+      if ((await checkUserAlreadyExistsInDB(userId, currentDate)) == false) {
         return res
           .status(404)
           .send(
@@ -170,14 +222,17 @@ const getAuthenticateDateAndTime = async (req, res) => {
           {
             where: {
               UserId: userId,
+              date: currentDate,
             },
           }
         );
+        return res.status(200).send({ success: true });
       } else {
         // User ကိုရှာတွေ့ပြီး
         // နဲနဲစောထွက်ရင်
         if (await checkUserDateExistStatus("PM"))
           return res.status(401).send("You already check out for evening");
+
         const currentDate = getPredefinedDateAndTime("PM");
         const earlyOutTime = moment(currentDate).diff(dateTime, "minutes");
         await Attendance.update(
@@ -185,7 +240,7 @@ const getAuthenticateDateAndTime = async (req, res) => {
             out_time: userArrivalTime,
             early_out_time: earlyOutTime,
           },
-          { where: { UserId: userId } }
+          { where: { UserId: userId, date: currentDate } }
         );
 
         return res.status(200).send({ success: true });

@@ -13,10 +13,7 @@ const login = async (req, res) => {
     where: { username: username },
   });
   if (!user) return res.status(404).send("User not found");
-  const dbComparePassword = await comparePassword(
-    password,
-    user.dataValues.password
-  );
+  const dbComparePassword = await comparePassword(password, user.password);
   if (!dbComparePassword)
     return res.status(401).send({ message: "Wrong Password" });
   const dbUsername = user.username;

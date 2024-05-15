@@ -1,3 +1,23 @@
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Attendance:
+ *       type: object
+ *       required:
+ *         - dateTime
+ *         - UserId
+ *       properties:
+ *         dateTime:
+ *           type: string
+ *           description: check in with data and time
+ *         UserId:
+ *           type: integer
+ *           description: userid as a foreign key
+ *       example:
+ *         dateTime: 2024-05-15
+ *         UserId: 1
+ */
 module.exports = (sequelize, DataTypes) => {
   const Attendance = sequelize.define("Attendance", {
     in_time: {

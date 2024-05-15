@@ -73,7 +73,6 @@ const createStaff = async (req, res) => {
     attendanceLeave,
     nrc,
     departmentId,
-    departmentName,
   } = req.body;
   const profileImage = req.file;
 
@@ -98,7 +97,7 @@ const createStaff = async (req, res) => {
   //   return res.status(400).send("Missing Credential");
   // Check Also for profile image exists
   // if (!profileImage) return res.status(404).send("Upload File Not Found");
-  const hashedPassword = await hashPassword("password");
+  const hashedPassword = await hashPassword(password);
   // const { id } = await Department.findOne({
   //   where: { deptName: "Software" },
   // });
@@ -123,7 +122,7 @@ const createStaff = async (req, res) => {
 
   // Create user data with the file URL
   const userData = {
-    username: username || "Kyaw Kyaw",
+    username: username || "Hnin Hnin",
     password: hashedPassword || "admin@123",
     Email: email || "staff@gmail.com",
     Gender: gender || "female",
@@ -135,12 +134,12 @@ const createStaff = async (req, res) => {
     DOB: dob || "12-2-2000",
     PhoneNumber: phoneNumber || 22222,
     Address: address || "Dawbon",
-    AnnualLeave: annualLeave || 1,
+    AnnualLeave: annualLeave || 3,
     MedicalLeave: mediacalLeave || 1,
-    AttendanceLeave: 3,
+    AttendanceLeave: attendanceLeave || 3,
     NRC: nrc || "12/DPN(N)983829",
     refreshToken: null,
-    DepartmentId: departmentId || 1,
+    DepartmentId: departmentId || 2,
   };
 
   // Create the user with the user data

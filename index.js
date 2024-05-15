@@ -12,6 +12,11 @@ const verifyJWT = require("./middleware/verifyJWT");
 const attendance = require("./routes/api/attendance");
 const leaveRecord = require("./routes/api/leaveRecords");
 const attendanceRequest = require("./routes/api/attendanceRequest");
+
+const swaggerDocs = require("./utils/swagger");
+const swaggerJsdoc = require("swagger-jsdoc");
+const swaggerUi = require("swagger-ui-express");
+
 const db = require("./models");
 
 require("dotenv").config();
@@ -24,6 +29,31 @@ app.use(express.json());
 app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+// const options = {
+//   definition: {
+//     openapi: "3.1.0",
+//     info: {
+//       title: "Employee Management Express API with Swagger",
+//       version: "0.1.0",
+//       description:
+//         "This is a simple CRUD API application made with Express and documented with Swagger",
+//     },
+//     servers: [
+//       {
+//         url: "http://localhost:8000",
+//       },
+//     ],
+//   },
+//   apis: ["./routes/api/*.js", "./models/*.js"],
+// };
+
+// const specs = swaggerJsdoc(options);
+// app.use(
+//   "/api-docs",
+//   swaggerUi.serve,
+//   swaggerUi.setup(specs, { explorer: true })
+// );
 
 // Routes API
 app.use("/api/v1/mapCheck", authLocation);
@@ -48,5 +78,6 @@ app.all((req, res) => {
 db.sequelize.sync({ force: false }).then(() => {
   app.listen(PORT, () => {
     console.log("Server is running on PORT : ", PORT);
+    swaggerDocs(app, PORT);
   });
 });

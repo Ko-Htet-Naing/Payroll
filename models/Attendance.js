@@ -5,18 +5,25 @@
  *     Attendance:
  *       type: object
  *       required:
- *         - dateTime
- *         - UserId
+ *         - in_time
+ *         - out_time
+ *         - late_in_time
+ *         - early_out_time
+ *         - date
  *       properties:
- *         dateTime:
+ *         in_time:
  *           type: string
- *           description: check in with data and time
- *         UserId:
- *           type: integer
- *           description: userid as a foreign key
- *       example:
- *         dateTime: 2024-05-15
- *         UserId: 1
+ *           format: time
+ *         out_time:
+ *           type: string
+ *           format: time
+ *         late_in_time:
+ *           type: number
+ *         early_out_time:
+ *           type: number
+ *         date:
+ *           type: string
+ *           format: date
  */
 module.exports = (sequelize, DataTypes) => {
   const Attendance = sequelize.define("Attendance", {

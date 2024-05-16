@@ -106,13 +106,14 @@ const getUserCount = async (req, res) => {
   const getAllEmployee = async () => {
     try {
       const totalId = await getAllUserId();
-      res.status(200).json({ leaveList: await getLeaveCount() });
+      // res.status(200).json({ leaveList: await getLeaveCount() });
       if (totalId.length > 0) {
         const DepartmentIds = await getAttendanceWithDepartment(totalId);
         res.status(200).json({
           employeeList: await getTotalEmployeeCount(),
           departmentCount: DepartmentIds,
           totalAttendanceCount: await totalUserCount(),
+          leaveList: await getLeaveCount(),
         });
       } else {
         res.status(200).send("ဒီနေ့ဘယ်သူမှ ရုံးမတက်ပါ...");

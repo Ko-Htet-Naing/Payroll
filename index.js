@@ -1,5 +1,4 @@
 const express = require("express");
-const authLocation = require("./routes/api/authLocation");
 const user = require("./routes/api/Users");
 const testRoute = require("./routes/testRoute");
 const department = require("./routes/api/Departments");
@@ -15,8 +14,6 @@ const leaveRecord = require("./routes/api/leaveRecords");
 const attendanceRequest = require("./routes/api/attendanceRequest");
 
 const swaggerDocs = require("./utils/swagger");
-const swaggerJsdoc = require("swagger-jsdoc");
-const swaggerUi = require("swagger-ui-express");
 
 const db = require("./models");
 
@@ -31,33 +28,7 @@ app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// const options = {
-//   definition: {
-//     openapi: "3.1.0",
-//     info: {
-//       title: "Employee Management Express API with Swagger",
-//       version: "0.1.0",
-//       description:
-//         "This is a simple CRUD API application made with Express and documented with Swagger",
-//     },
-//     servers: [
-//       {
-//         url: "http://localhost:8000",
-//       },
-//     ],
-//   },
-//   apis: ["./routes/api/*.js", "./models/*.js"],
-// };
-
-// const specs = swaggerJsdoc(options);
-// app.use(
-//   "/api-docs",
-//   swaggerUi.serve,
-//   swaggerUi.setup(specs, { explorer: true })
-// );
-
 // Routes API
-app.use("/api/v1/mapCheck", authLocation);
 
 // middleware
 app.use("/api/v1/users", user);

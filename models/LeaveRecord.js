@@ -1,3 +1,42 @@
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     LeaveRecord:
+ *       type: object
+ *       required:
+ *         - reasons
+ *         - leaveType
+ *         - status
+ *         - from
+ *         - to
+ *         - attachmentUrl
+ *         - UserId
+ *       properties:
+ *         reasons:
+ *           type: string
+ *         leaveType:
+ *           type: string
+ *         status:
+ *           type: string
+ *         from:
+ *           type: string
+ *           format: date
+ *         to:
+ *           type: string
+ *           format: date
+ *         attachmentUrl:
+ *           type: string
+ *         UserId:
+ *           type: integer
+ *       example:
+ *         reasons: illness
+ *         leaveType: Medical Leave
+ *         status: Pending
+ *         from: 2024-05-14
+ *         to : 2024-05-14
+ *         UserId: 1
+ */
 module.exports = (sequelize, DataTypes) => {
   const LeaveRecord = sequelize.define("LeaveRecord", {
     reasons: {

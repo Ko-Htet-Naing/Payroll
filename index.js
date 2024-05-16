@@ -1,5 +1,4 @@
 const express = require("express");
-const authLocation = require("./routes/api/authLocation");
 const user = require("./routes/api/Users");
 const testRoute = require("./routes/testRoute");
 const department = require("./routes/api/Departments");
@@ -13,6 +12,9 @@ const verifyJWT = require("./middleware/verifyJWT");
 const attendance = require("./routes/api/attendance");
 const leaveRecord = require("./routes/api/leaveRecords");
 const attendanceRequest = require("./routes/api/attendanceRequest");
+
+const swaggerDocs = require("./utils/swagger");
+
 const db = require("./models");
 
 require("dotenv").config();
@@ -27,7 +29,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 // Routes API
-app.use("/api/v1/mapCheck", authLocation);
 
 // middleware
 app.use("/api/v1/users", user);
@@ -50,5 +51,6 @@ app.all((req, res) => {
 db.sequelize.sync({ force: false }).then(() => {
   app.listen(PORT, () => {
     console.log("Server is running on PORT : ", PORT);
+    swaggerDocs(app, PORT);
   });
 });

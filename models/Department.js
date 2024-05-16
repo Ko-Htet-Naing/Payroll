@@ -1,3 +1,22 @@
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Department:
+ *       type: object
+ *       required:
+ *         - deptName
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: The auto-generated id of the book
+ *         deptName:
+ *           type: string
+ *           description: The department name
+ *
+ *       example:
+ *         deptName: Software
+ */
 module.exports = (sequelize, DataType) => {
   const Department = sequelize.define("Department", {
     deptName: {

@@ -1,40 +1,9 @@
-const haversine = require("haversine");
 const moment = require("moment");
 const { format, isSameDay, parse, differenceInSeconds } = require("date-fns");
 const { Attendance } = require("../models");
 
-let locationRange = 1000;
-let isValid = null;
-
-// Location Auth
-const locationAuth = (req, res) => {
-  const { lat, lon } = req.body;
-  if (!lat && !lon) return res.status(404).send("Lat or Lon Missing");
-  const start = {
-    latitude: lat || 16.81709781404742,
-    longitude: lon || 96.12951985255191,
-  };
-
-  const end = {
-    latitude: 16.81669722489963,
-    longitude: 96.12860150837099,
-  };
-
-  isValid = haversine(start, end, {
-    threshold: locationRange,
-    unit: "meter",
-  });
-  res.status(200).json({ isValid: isValid });
-};
-// Set Range by HR
-const setlocationAuth = (req, res) => {
-  const range = req.body;
-  if (!range) return res.sendStatus(404);
-  locationRange = range;
-};
-
 // Get authenticate date and time
-const getAuthenticateDateAndTime = async (req, res) => {
+const realTimeClick = async (req, res) => {
   // Predefined Date And Time Function
   const getPredefinedDateAndTime = (chooseDayTime) => {
     const date2 = moment();
@@ -87,59 +56,37 @@ const getAuthenticateDateAndTime = async (req, res) => {
   // Evening Leave သာဖြစ်ခဲ့ရင် အလုပ်ချိန် 8:30 to 12:30
 
   const checkUserDateExistStatus = async (optionForDayNight) => {
+    console.log("entering exist or not function");
+
     // User ရဲ့ in_time ကို မနက်ခင်းမှာ စစ်
     // false ဆိုတာ User ကို ပေးလုပ်တာ ဖြစ်ပြီး
     // true ဆိုတာ User ကို တားမြစ်တာ ဖြစ်ပါတယ်...
     if (optionForDayNight === "AM") {
+      console.log("Entering AM section");
+
       const userDayCheckIn = await Attendance.findOne({
         where: { UserId: userId, date: currentDate },
         attributes: ["in_time", "date"],
       });
+      console.log(userDayCheckIn);
+
       if (userDayCheckIn === null) {
         return false;
-      }
-      if (userDayCheckIn.date !== currentDate) {
-        // current date နဲ့ မညီရင်
-        let occurance = await Attendance.findOne({
-          where: { date: currentDate, UserId: userId },
-          attributes: ["in_time"],
-        });
-        if (occurance === null) {
-          // in_time ကို စစ် null ဖြစ်နေရင် false
-          return false;
-        } else if (occurance !== null) {
-          // in_time null မဖြစ်ရင် သူ check_in လုပ်ပြီးပြီဆိုတဲ့သဘော
-          return true;
-        }
-        return false;
-      } else if (userDayCheckIn.date === currentDate) {
+      } else {
         return true;
       }
     }
     // User ရဲ့ out_time ကို ညနေခင်းမှာ စစ်
     if (optionForDayNight === "PM") {
+      console.log("entring PM section");
+
       const userNightCheckIn = await Attendance.findOne({
-        where: { UserId: userId },
+        where: { UserId: userId, date: currentDate },
         attributes: ["out_time", "date"],
       });
-      if (userNightCheckIn === null) {
+      if (userNightCheckIn.out_time === null) {
         return false;
-      }
-      if (userNightCheckIn.date !== currentDate) {
-        // current date နဲ့ မညီရင်
-        let occurance = await Attendance.findOne({
-          where: { date: currentDate, UserId: userId },
-          attributes: ["out_time"],
-        });
-        if (occurance.out_time === null) {
-          // in_time ကို စစ် null ဖြစ်နေရင် false
-          return false;
-        } else if (occurance.out_time !== null) {
-          // in_time null မဖြစ်ရင် သူ check_in လုပ်ပြီးပြီဆိုတဲ့သဘော
-          return true;
-        }
-        return false;
-      } else if (userNightCheckIn.date === currentDate) {
+      } else {
         return true;
       }
     }
@@ -152,15 +99,13 @@ const getAuthenticateDateAndTime = async (req, res) => {
 
     if (checkMorningEveningStatus === "AM") {
       if (hour <= 8 && minute <= 30) {
+        console.log(await checkUserAlreadyExistsInDB(userId, currentDate));
+        console.log(userId);
+        console.log(currentDate);
+
         // အချိန်မှီရောက်လာရင်
         if (await checkUserAlreadyExistsInDB(userId, currentDate)) {
-          await Attendance.update(
-            {
-              in_time: userArrivalTime,
-            },
-            { where: { UserId: userId, date: currentDate } }
-          );
-          return res.status(200).send({ success: true });
+          return res.status(401).send({ success: false });
         } else {
           if (await checkUserDateExistStatus("AM"))
             return res.status(401).send("You already check in for morning");
@@ -172,7 +117,7 @@ const getAuthenticateDateAndTime = async (req, res) => {
           return res.status(200).send({ success: true });
         }
       }
-      if (hour >= 8 || minute > 30) {
+      if (hour >= 8 && minute > 30) {
         // Leave ရှိလား မရှိဘူးလား
         // နောက်ကျမှ ဝင်လာခဲ့ရင်
         if (await checkUserDateExistStatus("AM"))
@@ -201,7 +146,6 @@ const getAuthenticateDateAndTime = async (req, res) => {
         }
       }
     } else if (checkMorningEveningStatus === "PM") {
-      const currentDate = getPredefinedDateAndTime("AM");
       // user ကို အရင် ရှာ
       if ((await checkUserAlreadyExistsInDB(userId, currentDate)) == false) {
         return res
@@ -214,7 +158,7 @@ const getAuthenticateDateAndTime = async (req, res) => {
         // user ကို လည်း ရှာတွေ့ပြီး
         // ပုံမှန်အချိန်ထွက်ရင်
         if (await checkUserDateExistStatus("PM"))
-          return res.status(401).send("You already check out for evening");
+          return res.status(401).send("You already check out for evening 1");
         await Attendance.update(
           {
             out_time: userArrivalTime,
@@ -232,7 +176,6 @@ const getAuthenticateDateAndTime = async (req, res) => {
         // နဲနဲစောထွက်ရင်
         if (await checkUserDateExistStatus("PM"))
           return res.status(401).send("You already check out for evening");
-
         const currentDate = getPredefinedDateAndTime("PM");
         const earlyOutTime = moment(currentDate).diff(dateTime, "minutes");
         await Attendance.update(
@@ -249,7 +192,5 @@ const getAuthenticateDateAndTime = async (req, res) => {
   }
 };
 module.exports = {
-  locationAuth,
-  setlocationAuth,
-  getAuthenticateDateAndTime,
+  realTimeClick,
 };

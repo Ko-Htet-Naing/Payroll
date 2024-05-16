@@ -1,4 +1,5 @@
-const { Attendance, Department, Users } = require("../models");
+const { Attendance, Department, Users, LeaveRecord } = require("../models");
+const { Op } = require("sequelize");
 const moment = require("moment");
 
 const getUserCount = async (req, res) => {
@@ -53,6 +54,25 @@ const getUserCount = async (req, res) => {
     });
   };
 
+  const getLeaveCount = async () => {
+    return await LeaveRecord.count({
+      where: {
+        from: { [Op.lte]: currentDate },
+        to: { [Op.gte]: currentDate },
+        status: "Approved",
+      },
+    });
+  };
+
+  // const getLeaveCount = await LeaveRecord.count({
+  //   where: {
+  //     from: { [Op.lte]: currentDate },
+  //     to: { [Op.gte]: currentDate },
+  //     status: "Approved",
+  //   },
+  // });
+  // res.json({ leavelist: getLeaveCount });
+
   // Get Department Count Realting with id
   const getAttendanceWithDepartment = async (userIds) => {
     try {
@@ -86,12 +106,14 @@ const getUserCount = async (req, res) => {
   const getAllEmployee = async () => {
     try {
       const totalId = await getAllUserId();
+      // res.status(200).json({ leaveList: await getLeaveCount() });
       if (totalId.length > 0) {
         const DepartmentIds = await getAttendanceWithDepartment(totalId);
         res.status(200).json({
           employeeList: await getTotalEmployeeCount(),
           departmentCount: DepartmentIds,
           totalAttendanceCount: await totalUserCount(),
+          leaveList: await getLeaveCount(),
         });
       } else {
         res.status(200).send("ဒီနေ့ဘယ်သူမှ ရုံးမတက်ပါ...");

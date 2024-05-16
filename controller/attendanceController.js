@@ -47,15 +47,11 @@ const getAttendance = async (req, res) => {
 
     // filter by date
     if (fromDate || toDate) {
-      whereClause = {
-        date: { [Op.between]: [fromDate, toDate] },
-      };
+      whereClause.date = { [Op.between]: [fromDate, toDate] };
     }
     if (username) {
-      whereUsername = {
-        username: {
-          [Op.like]: `%${username}%`,
-        },
+      whereUsername.username = {
+        [Op.like]: `%${username}%`,
       };
     }
 
@@ -72,56 +68,11 @@ const getAttendance = async (req, res) => {
       limit: size,
       offset: page * size,
     });
+    if (!attendance) return res.status(404).json("Attendance not found");
     res.status(200).json({ data: attendance, totalPage, totalCountToday });
   } catch (error) {
     console.error(error);
   }
 };
 
-// create new attendance
-const createAttendance = async (req, res) => {
-  console.log("time", moment().format("MMMM Do YYYY, h:mm:ss a"));
-  try {
-    const { in_time, out_time, date, UserId } = req.body;
-
-    const beginningTime = moment("08:45", "HH:mm");
-    const endTime = moment("16:45", "HH:mm");
-    const timeLimit = 0;
-
-    //convert inTime and outTime to moment objects
-    const inTimeMoment = moment(in_time, "HH:mm:ss");
-    const outTimeMoment = moment(out_time, "HH:mm:ss");
-
-    //calculate latInTime and earlyOutTime
-    const lateInTime = inTimeMoment.isAfter(beginningTime)
-      ? inTimeMoment.diff(beginningTime, "minutes")
-      : 0;
-
-    console.log(lateInTime);
-    const earlyOutTime = outTimeMoment.isBefore(endTime)
-      ? endTime.diff(outTimeMoment, "minutes")
-      : 0;
-
-    console.log(earlyOutTime);
-
-    // if (lateInTime <= timeLimit && earlyOutTime <= timeLimit) {
-    const newAttendance = await Attendance.create({
-      in_time,
-      out_time,
-      date,
-      late_in_time: lateInTime,
-      early_out_time: earlyOutTime,
-      UserId,
-    });
-
-    if (!newAttendance) return res.status(404).send("Attendance not found");
-
-    res.json({ message: "attendance created" });
-    // } else {
-    //   res.json({ message: "absent" });
-    // }
-  } catch (error) {
-    console.error(error);
-  }
-};
-module.exports = { createAttendance, getAttendance };
+module.exports = { getAttendance };

@@ -114,6 +114,8 @@ const getAuthenticateDateAndTime = async (req, res) => {
         return res.status(200).send({ success: true });
       }
     } else if (checkMorningEveningStatus === "PM") {
+      console.log(userId);
+
       // user ကို အရင် ရှာ
       const findUserInDb = await Attendance.findOne({
         where: { userId: userId },

@@ -172,7 +172,7 @@ const getAuthenticateDateAndTime = async (req, res) => {
           return res.status(200).send({ success: true });
         }
       }
-      if (hour >= 8 && minute > 30) {
+      if (hour >= 8 || minute > 30) {
         // Leave ရှိလား မရှိဘူးလား
         // နောက်ကျမှ ဝင်လာခဲ့ရင်
         if (await checkUserDateExistStatus("AM"))

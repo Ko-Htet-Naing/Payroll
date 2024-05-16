@@ -4,7 +4,6 @@ const moment = require("moment");
 const getUserCount = async (req, res) => {
   // Get current date
   const currentDate = moment().format("YYYY-MM-DD");
-
   // Get all user id who attended today
   const getAllUserId = async () => {
     try {
@@ -17,6 +16,15 @@ const getUserCount = async (req, res) => {
       return id.map((user) => user.UserId);
     } catch (error) {
       console.log("Error While Fetching Data", error);
+      return [];
+    }
+  };
+  // Get All user count
+  const getTotalEmployeeCount = async () => {
+    try {
+      return await Users.count();
+    } catch (error) {
+      console.log("Error while getting total employee count : ", error);
       return [];
     }
   };
@@ -81,9 +89,12 @@ const getUserCount = async (req, res) => {
       if (totalId.length > 0) {
         const DepartmentIds = await getAttendanceWithDepartment(totalId);
         res.status(200).json({
-          employeeList: await totalUserCount(),
+          employeeList: await getTotalEmployeeCount(),
           departmentCount: DepartmentIds,
+          totalAttendanceCount: await totalUserCount(),
         });
+      } else {
+        res.status(200).send("ဒီနေ့ဘယ်သူမှ ရုံးမတက်ပါ...");
       }
     } catch (err) {
       console.log("Error occur while combining id and department", err);

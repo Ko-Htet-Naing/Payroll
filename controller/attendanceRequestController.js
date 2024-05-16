@@ -1,14 +1,17 @@
 const { Attendance_Record } = require("../models");
+const UserHelper = require("../helpers/UserHelper");
 
 // create attendance request
 const createAttendanceRequest = async (req, res) => {
   const { reason, date, UserId } = req.body;
+  if (!reason || !date || !UserId)
+    return res.status(404).send("Credential Missing!");
   const attendaceRequest = {
-    reason: reason || "late",
+    reason: reason || "in_time_late", // "out_time_late"
     date: date || "2024-5-13",
     UserId: UserId || 3,
   };
-
+  console.log(UserHelper.checkUserInDB(1));
   await Attendance_Record.create(attendaceRequest);
   res.status(200).json(attendaceRequest);
 };

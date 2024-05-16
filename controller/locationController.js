@@ -92,7 +92,7 @@ const getAuthenticateDateAndTime = async (req, res) => {
     // true ဆိုတာ User ကို တားမြစ်တာ ဖြစ်ပါတယ်...
     if (optionForDayNight === "AM") {
       const userDayCheckIn = await Attendance.findOne({
-        where: { UserId: userId },
+        where: { UserId: userId, date: currentDate },
         attributes: ["in_time", "date"],
       });
       if (userDayCheckIn === null) {

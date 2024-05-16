@@ -46,6 +46,25 @@ const getUserCount = async (req, res) => {
     });
   };
 
+  const getLeaveCount = async () => {
+    return await LeaveRecord.count({
+      where: {
+        from: { [Op.lte]: currentDate },
+        to: { [Op.gte]: currentDate },
+        status: "Approved",
+      },
+    });
+  };
+
+  // const getLeaveCount = await LeaveRecord.count({
+  //   where: {
+  //     from: { [Op.lte]: currentDate },
+  //     to: { [Op.gte]: currentDate },
+  //     status: "Approved",
+  //   },
+  // });
+  // res.json({ leavelist: getLeaveCount });
+
   // Get Department Count Realting with id
   const getAttendanceWithDepartment = async (userIds) => {
     try {
@@ -79,6 +98,7 @@ const getUserCount = async (req, res) => {
   const getAllEmployee = async () => {
     try {
       const totalId = await getAllUserId();
+      res.status(200).json({ leaveList: await getLeaveCount() });
       if (totalId.length > 0) {
         const DepartmentIds = await getAttendanceWithDepartment(totalId);
         res.status(200).json({
@@ -92,18 +112,6 @@ const getUserCount = async (req, res) => {
     }
   };
   await getAllEmployee();
-
-  const today = new Date();
-  console.log("today", today);
-  today.setHours(0, 0, 0, 0);
-  // get leave count for today
-  const getLeaveCount = await LeaveRecord.count({
-    where: {
-      from: { [Op.lte]: today },
-      to: { [Op.gte]: today },
-    },
-  });
-  res.json({ leaveCount: getLeaveCount });
 };
 
 module.exports = { getUserCount };

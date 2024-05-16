@@ -1,5 +1,5 @@
-const { Attendance, Department, Users } = require("../models");
-
+const { Attendance, Department, Users, LeaveRecord } = require("../models");
+const { Op } = require("sequelize");
 const getUserCount = async (req, res) => {
   const getAllUserId = async () => {
     try {
@@ -21,7 +21,7 @@ const getUserCount = async (req, res) => {
         where: {
           id: userIds,
         },
-        attributes: ["DepartmentId"],   
+        attributes: ["DepartmentId"],
       });
       console.log(attendanceRecords);
       return attendanceRecords.map((record) => record.DepartmentId);
@@ -45,6 +45,18 @@ const getUserCount = async (req, res) => {
     }
   };
   await getAllEmployee();
+
+  const today = new Date();
+  console.log("today", today);
+  today.setHours(0, 0, 0, 0);
+  // get leave count for today
+  const getLeaveCount = await LeaveRecord.count({
+    where: {
+      from: { [Op.lte]: today },
+      to: { [Op.gte]: today },
+    },
+  });
+  res.json({ leaveCount: getLeaveCount });
 };
 
 module.exports = { getUserCount };

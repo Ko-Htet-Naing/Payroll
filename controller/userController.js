@@ -194,16 +194,12 @@ const getUserList = async (req, res, next) => {
     let whereClause = {};
     // filter by position
     if (position) {
-      whereClause = {
-        Position: position,
-      };
+      whereClause.Position = position;
     }
 
     // search by username
     if (username) {
-      whereClause = {
-        username: { [Op.like]: `%${username}%` },
-      };
+      whereClause.username = { [Op.like]: `%${username}%` };
     }
 
     // sort by EmployeeId

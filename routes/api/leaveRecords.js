@@ -46,6 +46,30 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *          minimum: 0
  *          maximum: 100
  *          default: 10
+ *     UsernameQueryParam:
+ *        name: username
+ *        in: query
+ *        description: The username to search for
+ *        required: false
+ *        schema:
+ *          type: string
+ *     FromDateQueryParam:
+ *        name: fromDate
+ *        in: query
+ *        description: The fromDate to search for
+ *        required: false
+ *        schema:
+ *          type: string
+ *          format: date
+ *     ToDateQueryParam:
+ *        name: toDate
+ *        in: query
+ *        description: The toDate to search for
+ *        required: false
+ *        schema:
+ *          type: string
+ *          format: date
+ *
  * /api/v1/leaveRecord:
  *   get:
  *     summary: Lists all the leave records
@@ -53,6 +77,9 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *     parameters:
  *       - $ref: '#/components/parameters/PageParam'
  *       - $ref: '#/components/parameters/PageSizeParam'
+ *       - $ref: '#/components/parameters/UsernameQueryParam'
+ *       - $ref: '#/components/parameters/FromDateQueryParam'
+ *       - $ref: '#/components/parameters/ToDateQueryParam'
  *     responses:
  *       200:
  *         description: The list of leave record.

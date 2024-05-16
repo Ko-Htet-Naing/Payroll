@@ -47,15 +47,11 @@ const getAttendance = async (req, res) => {
 
     // filter by date
     if (fromDate || toDate) {
-      whereClause = {
-        date: { [Op.between]: [fromDate, toDate] },
-      };
+      whereClause.date = { [Op.between]: [fromDate, toDate] };
     }
     if (username) {
-      whereUsername = {
-        username: {
-          [Op.like]: `%${username}%`,
-        },
+      whereUsername.username = {
+        [Op.like]: `%${username}%`,
       };
     }
 

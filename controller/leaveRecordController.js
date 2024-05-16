@@ -1,3 +1,5 @@
+const { date } = require("date-fn");
+const { Op } = require("sequelize");
 const { LeaveRecord, Users, Department } = require("../models");
 const moment = require("moment");
 const createLeave = async (req, res) => {
@@ -31,6 +33,9 @@ const createLeave = async (req, res) => {
 const getLeaveList = async (req, res) => {
   const pageAsNumber = Number.parseInt(req.query.page);
   const sizeAsNumber = Number.parseInt(req.query.size);
+  const username = req.query.username;
+  const from = req.query.fromDate;
+  const to = req.query.toDate;
 
   // pagination
   let page = 0;
@@ -52,24 +57,43 @@ const getLeaveList = async (req, res) => {
   const totalCount = await LeaveRecord.count();
   const totalPage = Math.ceil(totalCount / size);
 
-  // get leave records
-  const leaveList = await LeaveRecord.findAll({
-    include: [
-      {
-        model: Users,
-        attributes: ["username", "DepartmentId", "Position"],
-        include: [{ model: Department, attributes: ["deptName"] }],
-      },
-    ],
-    limit: size,
-    offset: page * size,
-  });
+  try {
+    let whereClause = {};
+    let whereUsername = {};
 
-  if (!leaveList)
-    return res.status(404).json({ message: "leave list not found" });
+    if (from && to) {
+      whereClause.from = { [Op.between]: [from, to] };
+      whereClause.to = { [Op.between]: [from, to] };
+    }
+    if (username) {
+      whereUsername.username = {
+        [Op.like]: `%${username}%`,
+      };
+    }
+    const leaveList = await LeaveRecord.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Users,
+          where: whereUsername,
+          attributes: ["username", "DepartmentId", "Position"],
+          include: [{ model: Department, attributes: ["deptName"] }],
+        },
+      ],
+      limit: size,
+      offset: page * size,
+    });
 
-  res.status(200).json({ data: leaveList, totalCount, totalPage });
+    if (!leaveList)
+      return res.status(404).json({ message: "leave list not found" });
+
+    res.status(200).json({ data: leaveList, totalCount, totalPage });
+  } catch (error) {
+    console.error(error);
+  }
 };
+
+// get leave records
 
 // updated status
 const updatedStatus = async (req, res) => {

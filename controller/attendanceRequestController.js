@@ -1,5 +1,5 @@
-const { Attendance_Record } = require("../models");
-const UserHelper = require("../helpers/UserHelper");
+const { Attendance_Record, Attendance } = require("../models");
+const UserHelper = require("../helpers/DBHelper");
 
 // create attendance request
 const createAttendanceRequest = async (req, res) => {
@@ -11,9 +11,14 @@ const createAttendanceRequest = async (req, res) => {
     date: date || "2024-5-13",
     UserId: UserId || 3,
   };
-  console.log(UserHelper.checkUserInDB(1));
-  await Attendance_Record.create(attendaceRequest);
-  res.status(200).json(attendaceRequest);
+  if (await UserHelper.checkUserInAttendanceDB(UserId)) {
+    if (UserHelper.findUserAttendanceLeaveCount(UserId)) {
+      const result = await UserHelper.findAndReplace(UserId, reason, date);
+      res.status(200).send("Operation Success");
+    } else {
+      res.status(401).send("Operation Unsuccessful");
+    }
+  }
 };
 
 // get all attendance request

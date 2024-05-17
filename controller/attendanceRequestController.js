@@ -1,16 +1,28 @@
-const { Attendance_Record } = require("../models");
+const { where } = require("sequelize");
+const { Attendance_Record, Attendance, Users } = require("../models");
 
 // create attendance request
 const createAttendanceRequest = async (req, res) => {
   const { reason, date, UserId } = req.body;
-  const attendaceRequest = {
+  const attendanceRequest = {
     reason: reason || "late",
     date: date || "2024-5-13",
     UserId: UserId || 3,
   };
 
-  await Attendance_Record.create(attendaceRequest);
-  res.status(200).json(attendaceRequest);
+  if (!attendanceRequest) {
+    res.status(404).json({ messages: "attendance request not found" });
+  } else {
+    const existingAttendanceRequest = await Attendance_Record.findOne({
+      where: { UserId: UserId, date: date },
+    });
+    if (!existingAttendanceRequest) {
+      await Attendance_Record.create(attendanceRequest);
+      res.status(200).json("attendaneRequest created");
+    } else {
+      res.status(400).json({ message: "Your already have attendance request" });
+    }
+  }
 };
 
 // get all attendance request
@@ -28,9 +40,8 @@ const updatedStatus = async (req, res) => {
   const attendanceRequest = await Attendance_Record.findByPk(id);
   if (!attendanceRequest) res.status(404).json("Attendance request not found");
   attendanceRequest.status = status;
-  await attendanceRequest.save();
-  res.status(200).json(attendanceRequest);
 };
+
 module.exports = {
   createAttendanceRequest,
   getAttendanceRequest,

@@ -6,7 +6,6 @@ class UserHelper {
    *
    * @param {string} userId - The ID of the user to check.
    * @returns {Promise<boolean>} - Returns true if the user exists, otherwise false.
-   * @returns {Promise<String>} - Returns string value rely on user exists
    * @throws {Error} - Throws an error if the database query fails.
    */
 
@@ -48,7 +47,7 @@ class UserHelper {
 
         if (isInTimeNull?.in_time === null) {
           try {
-            await Attendance.update(
+            const result = await Attendance.update(
               {
                 in_time: "8:30",
               },
@@ -59,9 +58,19 @@ class UserHelper {
                 },
               }
             );
-            // await Users.update({
-            //   AttendanceLeave :
-            // })
+            if (result[0] > 0) {
+              await Users.decrement("AttendanceLeave", {
+                by: 1,
+                where: {
+                  id: userId,
+                },
+              });
+            } else {
+              // Handle the case where no rows were updated
+              console.log(
+                "No attendance record found for the specified user and date."
+              );
+            }
           } catch (error) {
             console.log(
               "Error while updating morning user data in attendance table",
@@ -69,9 +78,9 @@ class UserHelper {
             );
             throw new Error("Error while updating user");
           }
-          return "Update Successful";
+          return true;
         } else {
-          return "Update Unsuccessful";
+          return false;
         }
       } catch (error) {
         console.log("Error while updating attendance in database", error);
@@ -89,7 +98,7 @@ class UserHelper {
         });
         if (isOutTimeNull?.out_time === null) {
           try {
-            const data = await Attendance.update(
+            const result = await Attendance.update(
               { out_time: "16:30" },
               {
                 where: {
@@ -98,7 +107,25 @@ class UserHelper {
                 },
               }
             );
-            console.log(data);
+            if (result[0] > 0) {
+              // Check User Count before updating (avoiding error)
+              const checkUserCount = await Users.findOne({
+                attributes: ["AttendanceLeave"],
+                where: {
+                  id: userId,
+                },
+              });
+              if (checkUserCount.AttendanceLeave !== 0) {
+                await Users.decrement("AttendanceLeave", {
+                  by: 1,
+                  where: {
+                    id: userId,
+                  },
+                });
+              }
+            } else {
+              return false;
+            }
           } catch (error) {
             console.log(
               "Error while updating evening user data in attendance table",
@@ -106,9 +133,9 @@ class UserHelper {
             );
             throw new Error("Error while updating user");
           }
-          return "Update Successful";
+          return true;
         } else {
-          return "Update Unsuccessful";
+          return false;
         }
       } catch (error) {
         console.log("Error while updating attendance in database", error);
@@ -120,19 +147,33 @@ class UserHelper {
   // Check User Attendance Leave count on Users Table
   static async findUserAttendanceLeaveCount(userId) {
     try {
-      const count = await Users.findOne(
-        { attributes: "AttendanceLeave" },
-        {
-          where: {
-            id: userId,
-          },
-        }
-      );
-      if (count === 0) return false;
-      return true;
+      const { AttendanceLeave } = await Users.findOne({
+        attributes: ["AttendanceLeave"],
+        where: {
+          id: userId,
+        },
+      });
+      if (parseInt(AttendanceLeave) === 0) {
+        return false;
+      } else {
+        return true;
+      }
     } catch (error) {
       console.log("Error while finding attendance leave count", error);
-      throw new Error("Error while finding attendance leave");
+      throw new Error("Error while finding attendance leave count");
+    }
+  }
+
+  // change status pending to approved in Database
+  static async findUserAndChangeStateToApproved(userId) {
+    try {
+      // Do some database query
+    } catch (error) {
+      console.log(
+        "Error while changing pending to approved in Database",
+        error
+      );
+      throw new Error("Error while changing pending to approved in Database");
     }
   }
 }

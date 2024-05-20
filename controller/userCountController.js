@@ -64,15 +64,6 @@ const getUserCount = async (req, res) => {
     });
   };
 
-  // const getLeaveCount = await LeaveRecord.count({
-  //   where: {
-  //     from: { [Op.lte]: currentDate },
-  //     to: { [Op.gte]: currentDate },
-  //     status: "Approved",
-  //   },
-  // });
-  // res.json({ leavelist: getLeaveCount });
-
   // Get Department Count Realting with id
   const getAttendanceWithDepartment = async (userIds) => {
     try {

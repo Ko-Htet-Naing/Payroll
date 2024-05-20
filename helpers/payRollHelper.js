@@ -26,7 +26,7 @@ class payRollHelper {
         },
       });
 
-      console.log("attendanceRecords", attendanceRecords);
+      // console.log("attendanceRecords", attendanceRecords);
 
       // Query leave records for the month with status "approved"
       const leaveRecords = await LeaveRecord.findAll({
@@ -37,7 +37,7 @@ class payRollHelper {
           to: { [Op.between]: [startDate, endDate] },
         },
       });
-      console.log("leave records", leaveRecords);
+      //console.log("leave records", leaveRecords);
 
       // Calculate total hours worked by summing up the hours from attendance records
       let totalHoursWorked = 0;
@@ -83,9 +83,53 @@ class payRollHelper {
           Math.floor((leaveEnd - leaveStart) / (1000 * 60 * 60 * 24)) + 1; // inclusive of both start and end
         console.log(leaveDays);
 
-        totalHoursWorked += leaveDays * 8;
+        if (
+          leaveRecords.status === "Medical Leave" ||
+          leaveRecords.status === "Annual Leave"
+        ) {
+          totalHoursWorked += leaveDays * 8;
+        } else {
+          totalHoursWorked += leaveDays * 4;
+        }
       });
       return totalHoursWorked;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  static async calculatePayroll(userId, startDate, endDate, year, month) {
+    try {
+      const users = await Users.findAll({ where: { id: userId } });
+      console.log(users);
+
+      const user = users[0];
+      const monthlySalary = user.Salary;
+      console.log("monthlysalary", monthlySalary);
+      const totalDays = endDate.getDate();
+      const workHourPerDay = 8;
+
+      const totalRate =
+        (totalDays - this.countWeekends(year, month)) * workHourPerDay;
+      console.log("totalRate", totalRate);
+
+      console.log("totalDays", totalDays);
+
+      const hourlyRate = monthlySalary / totalRate;
+
+      console.log("hourlyRate", hourlyRate);
+
+      const totalHours = await this.calculateTotalHoursForMonth(
+        userId,
+        startDate,
+        endDate
+      );
+      console.log("Total Hour", totalHours);
+
+      const totalPayroll = hourlyRate * totalHours;
+      console.log(totalPayroll);
+
+      return totalPayroll;
     } catch (error) {
       console.error(error);
     }

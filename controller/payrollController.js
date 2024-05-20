@@ -5,7 +5,6 @@ const getPayrollForThisMonth = async (req, res) => {
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
-  const userId = 1;
 
   const startDate = new Date(Date.UTC(year, month, 1));
   const endDate = new Date(Date.UTC(year, month + 1, 0));
@@ -13,21 +12,33 @@ const getPayrollForThisMonth = async (req, res) => {
   console.log(startDate.toISOString());
   console.log(endDate.toISOString());
 
+  const users = await Users.findAll({
+    attributes: ["id", "username", "Salary"],
+  });
+
   // Query attendance records for the month
 
-  const weekendCount = payRollHelper.countWeekends(year, month);
-  console.log("weekend count", weekendCount);
-  console.log("userid", userId);
+  const userListWithCalculatedPayroll = await Promise.all(
+    users.map(async (user) => {
+      const calculatePayroll = await payRollHelper.calculatePayroll(
+        user.id,
+        startDate,
+        endDate,
+        year,
+        month
+      );
 
-  const totalHourWork = await payRollHelper.calculateTotalHoursForMonth(
-    userId,
-    startDate,
-    endDate
+      await user.update({ Payroll: calculatePayroll });
+
+      return {
+        id: user.id,
+        username: user.username,
+        payroll: calculatePayroll,
+      };
+    })
   );
-  console.log("total hour ", totalHourWork);
-  res
-    .status(200)
-    .json({ weekendCount: weekendCount, totalHourWork: totalHourWork });
+
+  res.status(200).json({ "total salary": userListWithCalculatedPayroll });
 };
 
 module.exports = { getPayrollForThisMonth };

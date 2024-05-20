@@ -202,9 +202,9 @@ const getUserList = async (req, res, next) => {
       whereClause.username = { [Op.like]: `%${username}%` };
     }
 
-    // sort by EmployeeId
-    const order = [["EmployeeId", "ASC"]];
-    //const order = sort === "EmployeeId" ? [["EmployeeId", "DESC"]] : [];
+    // sort by username
+    const order =
+      sort === "desc" ? [["username", "DESC"]] : [["username", "ASC"]];
     const users = await Users.findAll({
       where: whereClause,
       include: [{ model: Department, attributes: ["DeptName"] }],

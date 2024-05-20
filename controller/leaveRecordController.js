@@ -93,8 +93,6 @@ const getLeaveList = async (req, res) => {
   }
 };
 
-// get leave records
-
 // updated status
 const updatedStatus = async (req, res) => {
   try {
@@ -108,26 +106,19 @@ const updatedStatus = async (req, res) => {
 
     const fromdate = leaveRecord.from;
     const todate = leaveRecord.to;
-    console.log("from date", fromdate);
-    console.log("to date", todate);
 
-    console.log(isAfterThreeDays(fromdate));
-    console.log("leave days", calculateLeaveDays(fromdate, todate));
     leaveRecord.status = status;
-    console.log("leave status", leaveRecord.status);
     if (leaveRecord.status === "Approved") {
       if (leaveRecord.leaveType === "Medical Leave") {
         const users = await Users.findByPk(leaveRecord.UserId);
         // medical leave ဖြစ်ရင်
         if (users.MedicalLeave === 0) {
-          leaveRecord.status = "Pending";
-          await leaveRecord.save();
           return res.status(400).json({
             message: "Do not have medical leave",
+            success: false,
           });
         } else {
-          users.MedicalLeave -= 1;
-          await users.save();
+          await users.decrement("MedicalLeave", { by: 1 });
         }
       } else if (leaveRecord.leaveType === "Annual Leave") {
         // annual leave ဖြစ်ရင်
@@ -136,50 +127,42 @@ const updatedStatus = async (req, res) => {
 
         // 3ရက်  ကြိုပြီး leave တင်ရ မယ်
         if (!isAfterThreeDays(fromdate)) {
-          leaveRecord.status = "Pending";
-          await leaveRecord.save();
           return res.status(400).json({
             message:
               "Cannot apply annual leave, start date must be at least 3 days in the future",
+            success: false,
           });
         }
 
         if (leaveDays > users.AnnualLeave) {
-          return res
-            .status(400)
-            .json({ message: "Insufficient annual leave balance" });
+          return res.status(400).json({
+            message: "Insufficient annual leave balance",
+            success: false,
+          });
         }
 
-        users.AnnualLeave -= leaveDays;
-        await users.save();
+        await users.decrement("AnnualLeave", { by: leaveDays });
       } else if (leaveRecord.leaveType === "Morning Leave") {
         const users = await Users.findByPk(leaveRecord.UserId);
         if (users.MedicalLeave === 0) {
-          leaveRecord.status = "Pending";
-          await leaveRecord.save();
           return res.status(400).json({
             message: "Do not have medical leave",
+            success: false,
           });
         } else {
-          users.MedicalLeave -= 0.5;
-          await users.save();
+          await users.decrement("MedicalLeave", { by: 0.5 });
         }
       } else if (leaveRecord.leaveType === "Evening Leave") {
         const users = await Users.findByPk(leaveRecord.UserId);
         if (users.MedicalLeave === 0) {
-          leaveRecord.status = "Pending";
-          await leaveRecord.save();
           return res.status(400).json({
             message: "Do not have medical leave",
+            success: false,
           });
         } else {
-          users.MedicalLeave -= 0.5;
-          await users.save();
+          await users.decrement("MedicalLeave", { by: 0.5 });
         }
       }
-    } else if (leaveRecord.status === "Rejected") {
-      // await leaveRecord.save();
-      res.status(400).json({ message: "Cannot request for leave" });
     }
     await leaveRecord.save();
     res.status(200).json(leaveRecord);

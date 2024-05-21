@@ -13,30 +13,43 @@ const createAttendanceRequest = async (req, res) => {
     adminApproved: adminApproved || false,
   };
   if (await UserHelper.checkUserInAttendanceDB(UserId)) {
+    // API မှ adminApproved ကို ture လို့ထားပြီး request လုပ်လာပါက...
     if (attendaceRequest.adminApproved) {
-      if (await UserHelper.findUserAttendanceLeaveCount(UserId)) {
-        const result = await UserHelper.findAndReplace(UserId, reason, date);
-        if (result) {
-          // attendance request table တွင် approved ပြင်ရန်
-
-          res
-            .status(200)
-            .json({ message: "Operation Successful", success: true });
+      if (await UserHelper.checkUserAlreadyApproved(UserId, date)) {
+        if (await UserHelper.findUserAttendanceLeaveCount(UserId)) {
+          const result = await UserHelper.findAndReplace(UserId, reason, date);
+          if (result) {
+            // attendance request table တွင် approved ပြင်ရန်
+            await UserHelper.updateUserStatusInDB(UserId, date);
+            res
+              .status(200)
+              .json({ message: "Operation Successful", success: true });
+          } else {
+            res.status(200).send({
+              message:
+                "Already Update your data, you don't need to do second time",
+              success: false,
+            });
+          }
         } else {
-          res.status(200).send({
-            message:
-              "Already Update your data, you don't need to do second time",
+          res.status(401).json({
+            message: "You don't have any leave count",
             success: false,
           });
         }
       } else {
-        res
-          .status(401)
-          .json({ message: "You don't have any leave count", success: false });
+        res.status(400).json({
+          message: "adminApproved :Admin မှ Approved လုပ်ပေးပြီးသားမို့လို့ပါ",
+          success: false,
+        });
       }
     } else {
-      res.status(400).json({
-        message: "adminApproved :false cannot complete your operation",
+      console.log("I am in Admin Permission false case");
+      // API မှ adminApproved ကို false လို့ထားပြီး request လုပ်လာပါက...
+      await UserHelper.setUserAttendanceToRejected(UserId, date);
+
+      res.status(401).json({
+        message: "Admin မှ Permission False...",
         success: false,
       });
     }

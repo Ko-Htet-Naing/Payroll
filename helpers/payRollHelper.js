@@ -41,7 +41,7 @@ class payRollHelper {
 
       // Calculate total hours worked by summing up the hours from attendance records
       let totalHoursWorked = 0;
-      console.log(totalHoursWorked);
+      //console.log(totalHoursWorked);
 
       attendanceRecords.forEach((record) => {
         if (record.in_time !== null && record.out_time !== null) {
@@ -68,9 +68,9 @@ class payRollHelper {
           if (record.early_out_time) {
             hoursWorked -= record.early_out_time / 60;
           }
-          console.log(
-            `In Time: ${inTime}, Out Time: ${outTime}, Hours Worked: ${hoursWorked}`
-          );
+          // console.log(
+          //   `In Time: ${inTime}, Out Time: ${outTime}, Hours Worked: ${hoursWorked}`
+          // );
 
           totalHoursWorked += hoursWorked;
         }
@@ -101,13 +101,14 @@ class payRollHelper {
   static async calculatePayroll(userId, startDate, endDate, year, month) {
     try {
       const users = await Users.findAll({ where: { id: userId } });
-      console.log(users);
 
       const user = users[0];
       const monthlySalary = user.Salary;
       console.log("monthlysalary", monthlySalary);
       const totalDays = endDate.getDate();
       const workHourPerDay = 8;
+
+      console.log("count weekend", this.countWeekends(year, month));
 
       const totalRate =
         (totalDays - this.countWeekends(year, month)) * workHourPerDay;

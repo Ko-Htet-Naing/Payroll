@@ -1,4 +1,5 @@
 const express = require("express");
+const authlocation = require("./routes/api/authLocation");
 const user = require("./routes/api/Users");
 const testRoute = require("./routes/testRoute");
 const department = require("./routes/api/Departments");
@@ -30,7 +31,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 // Routes API
-
+app.use("/api/v1/mapCheck", authlocation);
 // middleware
 app.use("/api/v1/users", user);
 app.use("/api/v1/departments", department);

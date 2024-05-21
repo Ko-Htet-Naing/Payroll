@@ -1,4 +1,5 @@
-const { Users, Attendance } = require("../models");
+const { Users, Attendance, Attendance_Record } = require("../models");
+const { Op } = require("sequelize");
 
 class UserHelper {
   /**
@@ -23,7 +24,9 @@ class UserHelper {
   // Check User Exists in Attendance Table
   static async checkUserInAttendanceDB(userId) {
     try {
+      console.log("I am in checking");
       const user = await Attendance.findOne({ where: { UserId: userId } });
+      console.log(!!user);
       return !!user; // return true if user exists, otherwise false
     } catch (error) {
       console.log("Error while finding attendance in database", error);
@@ -44,7 +47,7 @@ class UserHelper {
             date: userDate,
           },
         });
-
+        console.log(isInTimeNull);
         if (isInTimeNull?.in_time === null) {
           try {
             const result = await Attendance.update(
@@ -175,6 +178,56 @@ class UserHelper {
       );
       throw new Error("Error while changing pending to approved in Database");
     }
+  }
+
+  // Current user ဟာ Approved ဟုတ်မဟုတ်စစ်ဆေး
+  // Approved ဆိုရင် true ပြန်
+  // Pending ဆိုရင် false ပြန်
+  static async checkUserAlreadyApproved(userId, date) {
+    // Attendance Records ထဲမှာ Pending state နဲ့ Approved State တွေကို ရှာမယ်
+    console.log("I am in checkUserAlreadyApproved function");
+    try {
+      const result = await Attendance_Record.findOne({
+        where: {
+          UserId: userId,
+          date: date,
+          status: { [Op.in]: ["Pending", "Approved"] },
+        },
+      });
+      if (result) {
+        if (result.status === "Approved") {
+          // Approved ဖြစ်ပြီးသားဆိုရင် false ဆိုတာ အလုပ်ပေးမလုပ်တဲ့ သဘော
+          // Approved ဖြစ်နေပြီးသားဆိုတာ User ကို အကြောင်းပြန်ပေးမယ်
+          return false;
+        } else {
+          // Pending ဆိုမှ true ပြန်ပြီး အလုပ်ပေးလုပ်မယ်ဆိုတဲ့ သဘော
+          return true;
+        }
+      } else {
+        return "User Not exists in Attendance_Records Table";
+      }
+    } catch (error) {
+      console.log("Error while fetching data from database", error);
+    }
+  }
+  // User ရဲ့ status (  Pending to Approved ) ကို database ထဲမှာ ပြုပြင်တဲ့ function
+  static async updateUserStatusInDB(UserId, date) {
+    await Attendance_Record.update(
+      { status: "Approved" },
+      {
+        where: {
+          UserId: UserId,
+          date: date,
+        },
+      }
+    );
+  }
+  // User ရဲ့ status (  Pending to Rejected ) ကို database ထဲမှာ ပြုပြင်တဲ့ function
+  static async setUserAttendanceToRejected(UserId, date) {
+    console.log(
+      "Here is return of checkUser",
+      await UserHelper.checkUserAlreadyApproved(UserId, date)
+    );
   }
 }
 

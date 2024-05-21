@@ -68,12 +68,11 @@ const updatedStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  const attendanceRequest = await Attendance_Record.findByPk(id);
-  if (!attendanceRequest) res.status(404).json("Attendance request not found");
-  attendanceRequest.status = status;
-  await attendanceRequest.save();
-  res.status(200).json(attendanceRequest);
+  // const attendanceRequest = await Attendance_Record.findByPk(id);
+  // if (!attendanceRequest) res.status(404).json("Attendance request not found");
+  // attendanceRequest.status = status;
 };
+
 module.exports = {
   createAttendanceRequest,
   getAttendanceRequest,

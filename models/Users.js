@@ -88,6 +88,10 @@ module.exports = (sequelize, DataType) => {
     },
     Payroll: {
       type: DataType.INTEGER,
+      allowNull: true,
+    },
+    Salary: {
+      type: DataType.INTEGER,
       allowNull: false,
     },
     ProfileImage: {
@@ -99,7 +103,7 @@ module.exports = (sequelize, DataType) => {
       allowNull: false,
     },
     PhoneNumber: {
-      type: DataType.INTEGER,
+      type: DataType.STRING,
       allowNull: false,
     },
     Address: {

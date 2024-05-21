@@ -64,12 +64,12 @@ const createStaff = async (req, res) => {
     role,
     position,
     employeeId,
-    payroll,
+    salary,
     dob,
     phoneNumber,
     address,
     annualLeave,
-    mediacalLeave,
+    medicalLeave,
     attendanceLeave,
     nrc,
     departmentId,
@@ -129,13 +129,13 @@ const createStaff = async (req, res) => {
     Role: role || 5000,
     Position: position || "L2",
     EmployeeId: employeeId || 2222,
-    Payroll: payroll || 50000,
+    Salary: salary || 50000,
     ProfileImage: "someImageLinkFromMobile" || null,
     DOB: dob || "12-2-2000",
     PhoneNumber: phoneNumber || 22222,
     Address: address || "Dawbon",
     AnnualLeave: annualLeave || 3,
-    MedicalLeave: mediacalLeave || 1,
+    MedicalLeave: medicalLeave || 1,
     AttendanceLeave: attendanceLeave || 3,
     NRC: nrc || "12/DPN(N)983829",
     refreshToken: null,
@@ -202,9 +202,9 @@ const getUserList = async (req, res, next) => {
       whereClause.username = { [Op.like]: `%${username}%` };
     }
 
-    // sort by EmployeeId
-    const order = [["EmployeeId", "ASC"]];
-    //const order = sort === "EmployeeId" ? [["EmployeeId", "DESC"]] : [];
+    // sort by username
+    const order =
+      sort === "desc" ? [["username", "DESC"]] : [["username", "ASC"]];
     const users = await Users.findAll({
       where: whereClause,
       include: [{ model: Department, attributes: ["DeptName"] }],

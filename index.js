@@ -8,6 +8,8 @@ const cors = require("cors");
 const corsOptions = require("./config/allowOrigin");
 const cookieParser = require("cookie-parser");
 const userCount = require("./routes/api/userCount");
+
+// Auth လုပ်ချိန်တွင်
 const verifyJWT = require("./middleware/verifyJWT");
 
 const attendance = require("./routes/api/attendance");
@@ -29,6 +31,9 @@ app.use(express.json());
 app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+// Default value resetter
+require("./config/scheduler");
 
 // Routes API
 app.use("/api/v1/mapCheck", authlocation);

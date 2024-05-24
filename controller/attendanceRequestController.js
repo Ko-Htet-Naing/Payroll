@@ -3,9 +3,25 @@ const UserHelper = require("../helpers/DBHelper");
 
 // create attendance request
 const createAttendanceRequest = async (req, res) => {
-  const { reason, date, UserId, adminApproved } = req.body;
+  const { reason, date, UserId } = req.body;
   if (!reason || !date || !UserId)
     return res.status(404).send("Credential Missing!");
+  const attendaceRequest = {
+    reason: reason || "in_time_late", // "out_time_late"
+    date: date || "2024-5-13",
+    UserId: UserId || 3,
+  };
+  // DB တွင် pending state သုံးပြီး record တကြောင်းတိုးပေးရန်
+  const result = await UserHelper.createNewAttendanceRequest(attendaceRequest);
+  result
+    ? res.status(200).send("Successfully Requested To HR")
+    : res.status(400).send("Already Requested To HR");
+};
+
+// Admin မှ Confirmed(true or false) လုပ်ထားသော request များ
+const confirmRequest = async (req, res) => {
+  console.log("Working Confirm Request function");
+  const { reason, date, UserId, adminApproved } = req.body;
   const attendaceRequest = {
     reason: reason || "in_time_late", // "out_time_late"
     date: date || "2024-5-13",
@@ -17,18 +33,19 @@ const createAttendanceRequest = async (req, res) => {
     if (attendaceRequest.adminApproved) {
       if (await UserHelper.checkUserAlreadyApproved(UserId, date)) {
         if (await UserHelper.findUserAttendanceLeaveCount(UserId)) {
+          // User ရဲ့ AM PM ပေါ်မူတည်ပြီး time ကို ပြုပြင်ခြင်း
           const result = await UserHelper.findAndReplace(UserId, reason, date);
-          if (result) {
-            // attendance request table တွင် approved ပြင်ရန်
+          console.log(result);
+          if (result.success) {
+            // attendance request table တွင် ရလဒ်ပေါ်မူတည်ပြီး Approved Rejected ပြင်ရန်
             await UserHelper.updateUserStatusInDB(UserId, date);
             res
               .status(200)
-              .json({ message: "Operation Successful", success: true });
-          } else {
+              .json({ message: result.message, success: result.success });
+          } else if (result.success === false) {
             res.status(200).send({
-              message:
-                "Already Update your data, you don't need to do second time",
-              success: false,
+              message: result.message,
+              success: result.success,
             });
           }
         } else {
@@ -77,4 +94,5 @@ module.exports = {
   createAttendanceRequest,
   getAttendanceRequest,
   updatedStatus,
+  confirmRequest,
 };

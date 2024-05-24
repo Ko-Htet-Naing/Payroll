@@ -98,6 +98,7 @@ router.post(
   "/createRequest",
   attendanceRequestController.createAttendanceRequest
 );
+router.post("/adminApprove", attendanceRequestController.confirmRequest);
 router.get("/", attendanceRequestController.getAttendanceRequest);
 router.patch("/:id", attendanceRequestController.updatedStatus);
 module.exports = router;

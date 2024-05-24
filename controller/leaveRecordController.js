@@ -1,6 +1,7 @@
 const { date } = require("date-fn");
 const { Op } = require("sequelize");
 const { LeaveRecord, Users, Department } = require("../models");
+const LeaveHelper = require("../helpers/LeaveHelper");
 const moment = require("moment");
 const createLeave = async (req, res) => {
   const { reasons, leaveType, from, to, UserId } = req.body;
@@ -14,19 +15,24 @@ const createLeave = async (req, res) => {
     UserId: UserId || 1,
     attachmentUrl: "file from url" || null,
   };
-
-  if (!leaveRecords) {
-    res.status(404).json({ messages: "leave record not found" });
-  } else {
-    const existingLeave = await LeaveRecord.findOne({
-      where: { UserId: UserId, from: from },
-    });
-    if (!existingLeave) {
-      await LeaveRecord.create(leaveRecords);
-      res.status(200).json("Leave created");
+  // From to ကို လက်ရှိ date ရဲ့ နောက်က နေ့တွေ ဟုတ်မဟုတ် စစ်မယ်.....
+  const dateCheck = LeaveHelper.checkFromToDate(from, to, leaveType);
+  if (dateCheck.success) {
+    if (!leaveRecords) {
+      res.status(404).json({ messages: "leave record not found" });
     } else {
-      res.status(400).json({ message: "Your already have leave for today" });
+      const existingLeave = await LeaveRecord.findOne({
+        where: { UserId: UserId, from: from },
+      });
+      if (!existingLeave) {
+        await LeaveRecord.create(leaveRecords);
+        res.status(200).json("Leave created");
+      } else {
+        res.status(400).json({ message: "Your already have leave for today" });
+      }
     }
+  } else {
+    res.status(400).send(dateCheck.message);
   }
 };
 

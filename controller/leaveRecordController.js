@@ -1,7 +1,8 @@
 const { date } = require("date-fn");
-const { Op } = require("sequelize");
+const { Op, where } = require("sequelize");
 const { LeaveRecord, Users, Department } = require("../models");
-const moment = require("moment");
+const LeaveRecordHelper = require("../helpers/LeaveRecordHelper");
+
 const createLeave = async (req, res) => {
   const { reasons, leaveType, from, to, UserId } = req.body;
   const attachmentFile = req.file;
@@ -22,6 +23,7 @@ const createLeave = async (req, res) => {
       where: { UserId: UserId, from: from },
     });
     if (!existingLeave) {
+      LeaveRecordHelper.decrementLeaveCount(leaveRecords);
       await LeaveRecord.create(leaveRecords);
       res.status(200).json("Leave created");
     } else {
@@ -36,6 +38,7 @@ const getLeaveList = async (req, res) => {
   const username = req.query.username;
   const from = req.query.fromDate;
   const to = req.query.toDate;
+  const status = req.query.status;
 
   // pagination
   let page = 0;
@@ -54,43 +57,121 @@ const getLeaveList = async (req, res) => {
   }
   // Total Leave Record Count
 
-  const totalCount = await LeaveRecord.count();
-  const totalPage = Math.ceil(totalCount / size);
-
   try {
-    let whereClause = {};
-    let whereUsername = {};
+    const totalCount = await LeaveRecordHelper.getTotalLeaveCount();
+    const totalPage = Math.ceil(totalCount / size);
 
-    if (from && to) {
-      whereClause.from = { [Op.between]: [from, to] };
-      whereClause.to = { [Op.between]: [from, to] };
-    }
-    if (username) {
-      whereUsername.username = {
-        [Op.like]: `%${username}%`,
-      };
-    }
-    const leaveList = await LeaveRecord.findAll({
-      where: whereClause,
-      include: [
-        {
-          model: Users,
-          where: whereUsername,
-          attributes: ["username", "DepartmentId", "Position"],
-          include: [{ model: Department, attributes: ["deptName"] }],
-        },
-      ],
-      limit: size,
-      offset: page * size,
+    const leaveList = await LeaveRecordHelper.getLeaveList({
+      page,
+      size,
+      username,
+      from,
+      to,
+      status,
     });
 
-    if (!leaveList)
-      return res.status(404).json({ message: "leave list not found" });
-
-    res.status(200).json({ data: leaveList, totalCount, totalPage });
+    res.json({
+      leaveList,
+      totalPage,
+      totalCount,
+    });
   } catch (error) {
     console.error(error);
   }
+};
+
+// get leave record by userId
+const getByUserId = async (req, res) => {
+  const userId = req.params.UserId;
+
+  const pageAsNumber = Number.parseInt(req.query.page);
+  const sizeAsNumber = Number.parseInt(req.query.size);
+  const username = req.query.username;
+  const from = req.query.fromDate;
+  const to = req.query.toDate;
+  const status = req.query.status;
+
+  // pagination
+  let page = 0;
+  if (!Number.isNaN(pageAsNumber) && pageAsNumber > 0) {
+    page = pageAsNumber;
+  }
+
+  // show 10 attendances
+  let size = 10;
+  if (
+    !Number.isNaN(sizeAsNumber) &&
+    !(sizeAsNumber > 10) &&
+    !(sizeAsNumber < 1)
+  ) {
+    size = sizeAsNumber;
+  }
+  // Total Leave Record Count by userId
+
+  try {
+    const totalCount = await LeaveRecordHelper.getTotalLeaveCountByUserId(
+      userId
+    );
+    const totalPage = Math.ceil(totalCount / size);
+
+    const leaveListByUserId = await LeaveRecordHelper.getLeaveList({
+      page,
+      size,
+      username,
+      userId,
+      from,
+      to,
+      status,
+    });
+
+    res.json({
+      leaveListByUserId,
+      totalPage,
+      totalCount,
+    });
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+// delete leave record by id
+const deleteLeaveRecord = async (req, res) => {
+  const { id } = req.params;
+  const leaveRecord = await LeaveRecord.findByPk(id);
+  if (!leaveRecord) {
+    res.status(404).json({ messages: "Leave record not found" });
+  }
+
+  await leaveRecord.destroy({
+    where: { status: "Pending" },
+  });
+  LeaveRecordHelper.incrementLeaveCount(leaveRecord);
+  res.status(200).json("Deleted successfully");
+};
+
+// updated leave record by id
+
+const updatedLeaveRecord = async (req, res) => {
+  const { id } = req.params;
+
+  //const leaveRecord = await LeaveRecord.findByPk(id);
+  const { reasons, leaveType, from, to, attachmentUrl } = req.body;
+  console.log(leaveType);
+
+  await LeaveRecord.update(
+    {
+      reasons: reasons,
+      leaveType: leaveType,
+      from: from,
+      to: to,
+      attachmentUrl: attachmentUrl,
+    },
+    {
+      where: { status: "Pending", id: id },
+    }
+  );
+
+  res.status(200).json("updated successfully");
 };
 
 // updated status
@@ -104,89 +185,25 @@ const updatedStatus = async (req, res) => {
       return res.status(404).json({ message: "Leave record not found" });
     }
 
-    const fromdate = leaveRecord.from;
-    const todate = leaveRecord.to;
-
-    leaveRecord.status = status;
+    leaveRecord.update({ status: status });
     if (leaveRecord.status === "Approved") {
-      if (leaveRecord.leaveType === "Medical Leave") {
-        const users = await Users.findByPk(leaveRecord.UserId);
-        // medical leave ဖြစ်ရင်
-        if (users.MedicalLeave === 0) {
-          return res.status(400).json({
-            message: "Do not have medical leave",
-            success: false,
-          });
-        } else {
-          await users.decrement("MedicalLeave", { by: 1 });
-        }
-      } else if (leaveRecord.leaveType === "Annual Leave") {
-        // annual leave ဖြစ်ရင်
-        const leaveDays = calculateLeaveDays(fromdate, todate);
-        const users = await Users.findByPk(leaveRecord.UserId);
-
-        // 3ရက်  ကြိုပြီး leave တင်ရ မယ်
-        if (!isAfterThreeDays(fromdate)) {
-          return res.status(400).json({
-            message:
-              "Cannot apply annual leave, start date must be at least 3 days in the future",
-            success: false,
-          });
-        }
-
-        if (leaveDays > users.AnnualLeave) {
-          return res.status(400).json({
-            message: "Insufficient annual leave balance",
-            success: false,
-          });
-        }
-
-        await users.decrement("AnnualLeave", { by: leaveDays });
-      } else if (leaveRecord.leaveType === "Morning Leave") {
-        const users = await Users.findByPk(leaveRecord.UserId);
-        if (users.MedicalLeave === 0) {
-          return res.status(400).json({
-            message: "Do not have medical leave",
-            success: false,
-          });
-        } else {
-          await users.decrement("MedicalLeave", { by: 0.5 });
-        }
-      } else if (leaveRecord.leaveType === "Evening Leave") {
-        const users = await Users.findByPk(leaveRecord.UserId);
-        if (users.MedicalLeave === 0) {
-          return res.status(400).json({
-            message: "Do not have medical leave",
-            success: false,
-          });
-        } else {
-          await users.decrement("MedicalLeave", { by: 0.5 });
-        }
-      }
+      return res.status(200).json("Approved Successfully");
     }
-    await leaveRecord.save();
-    res.status(200).json(leaveRecord);
+    if (leaveRecord.status === "Rejected") {
+      LeaveRecordHelper.incrementLeaveCount(leaveRecord);
+    }
+
+    res.status(200).json("Rejected successfully");
   } catch (error) {
     console.error(error);
   }
 };
 
-const isAfterThreeDays = (dateToCheck) => {
-  const fromdate = moment(dateToCheck);
-  // Calculate the date 3 days from now
-  const threeDaysFromNow = moment().add(3, "days");
-  // Check if the provided date is after 3 days from now
-  const isAfter = fromdate.isAfter(threeDaysFromNow, "day");
-  return isAfter;
+module.exports = {
+  createLeave,
+  getLeaveList,
+  updatedStatus,
+  getByUserId,
+  deleteLeaveRecord,
+  updatedLeaveRecord,
 };
-
-const calculateLeaveDays = (fromDate, toDate) => {
-  const start = moment(fromDate);
-  const end = moment(toDate);
-
-  // Calculate the difference in days
-  const leaveDays = end.diff(start, "days") + 1; // Adding 1 to include both the start and end dates
-
-  return leaveDays;
-};
-module.exports = { createLeave, getLeaveList, updatedStatus };

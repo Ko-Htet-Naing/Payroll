@@ -108,6 +108,11 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/LeaveRecord'
+ *             type: objects
+ *             required:
+ *               - status
+ *             properties:
+ *               status: string
  *     responses:
  *       200:
  *         description: The status was updated
@@ -117,10 +122,95 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *               $ref: '#/components/schemas/LeaveRecord'
  *       404:
  *         description: The leave record was not found
+ * /api/v1/leaveRecord/{UserId}:
+ *   get:
+ *     summary: Get the leave records by UserId
+ *     tags: [LeaveRecord]
+ *     parameters:
+ *       - in: path
+ *         name: UserId
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: the user id
+ *       - $ref: '#/components/parameters/PageParam'
+ *       - $ref: '#/components/parameters/PageSizeParam'
+ *       - $ref: '#/components/parameters/UsernameQueryParam'
+ *       - $ref: '#/components/parameters/FromDateQueryParam'
+ *       - $ref: '#/components/parameters/ToDateQueryParam'
+ *     responses:
+ *       200:
+ *         description: The leave response by userId
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                  $ref: '#/components/schemas/LeaveRecord'
+ *       404:
+ *         description: Leave Record Not Found
+ * /api/v1/leaveRecord/delete/{id}:
+ *   delete:
+ *     summary: Remove the leave record by the id
+ *     tags: [LeaveRecord]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The leave record id
+ *     responses:
+ *       200:
+ *         description: The leave record was deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LeaveRecord'
+ *       404:
+ *         description: The leave record was not found
+ * /api/v1/leaveRecord/update/{id}:
+ *   put:
+ *     summary: Update the records by the id
+ *     tags: [LeaveRecord]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The leave record id
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LeaveRecord'
+ *             type: objects
+ *             required:
+ *               - reasons
+ *               - leaveType
+ *               - from
+ *               - to
+ *               - attachmentUrl
+ *             properties:
+ *               reasons: "illness"
+ *               leaveType: Medical Leave
+ *               from: 2024-5-28
+ *               to: 2024-5-28
+ *               attachmentUrl: file from url
+ *     responses:
+ *       200:
+ *         description: The leave record was updated
+ *       404:
+ *         description: The leave record was not found
  */
-router.post("/createLeave", leaveRecordController.createLeave);
 
+router.post("/createLeave", leaveRecordController.createLeave);
 router.get("/", leaveRecordController.getLeaveList);
 router.patch("/:id", leaveRecordController.updatedStatus);
 
+router.get("/:UserId", leaveRecordController.getByUserId);
+router.delete("/delete/:id", leaveRecordController.deleteLeaveRecord);
+router.put("/update/:id", leaveRecordController.updatedLeaveRecord);
 module.exports = router;

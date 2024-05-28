@@ -55,6 +55,7 @@ const getAttendance = async (req, res) => {
       };
     }
 
+    const order = [["date", "DESC"]];
     const attendance = await Attendance.findAll({
       where: whereClause,
       include: [
@@ -65,14 +66,26 @@ const getAttendance = async (req, res) => {
           include: [{ model: Department, attributes: ["deptName"] }],
         },
       ],
+      order: order,
       limit: size,
       offset: page * size,
     });
     if (!attendance) return res.status(404).json("Attendance not found");
-    res.status(200).json({ data: attendance, totalPage, totalCountToday });
+    res.status(200).json({
+      columns: [
+        { Header: "Name", accessor: "username" },
+        { Header: "Date", accessor: "date" },
+        { Header: "Department", accessor: "department" },
+        { Header: "Position", accessor: "position" },
+        { Header: "InTime", accessor: "inTime" },
+        { Header: "OutTime", accessor: "outTime" },
+      ],
+      datas: attendance,
+      totalPage,
+      totalCountToday,
+    });
   } catch (error) {
     console.error(error);
   }
 };
-
 module.exports = { getAttendance };

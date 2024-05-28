@@ -213,11 +213,42 @@ const getUserList = async (req, res, next) => {
       offset: page * size,
     });
 
-    res.status(200).json({ data: users, totalPage, totalCount });
+    res.status(200).json({
+      columns: [
+        { header: "username", accessor: "username" },
+        { header: "position", accessor: "position" },
+        { header: "employeeId", accessor: "employeeId" },
+        { header: "salary", accessor: "salary" },
+        { header: "annualLeave", accessor: "annualLeave" },
+        { header: "medicalLeave", accessor: "medicalLeave" },
+        { header: "attendanceLeave", accessor: "attendanceLeave" },
+        { header: "departmentName", accessor: "departmentName" },
+      ],
+      datas: users,
+      totalPage,
+      totalCount,
+    });
   } catch (error) {
     next();
     console.error(error);
   }
 };
 
-module.exports = { createStaff, deleteStaff, getUserList };
+const updateUserData = async (req, res) => {
+  const { id } = req.params;
+
+  const userId = await Users.findOne({ where: { id: id } });
+  const { role, position, salary, phoneNumber, address } = req.body;
+
+  if (!userId) return res.status(404).json("user id not found");
+  const updateUserData = await userId.update({
+    Role: role,
+    Position: position,
+    Salary: salary,
+    PhoneNumber: phoneNumber,
+    Address: address,
+  });
+  if (!updateUserData) return res.status(404).json("user not updated");
+  res.status(200).json("Updated successfully");
+};
+module.exports = { createStaff, deleteStaff, getUserList, updateUserData };

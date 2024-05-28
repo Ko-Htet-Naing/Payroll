@@ -97,12 +97,48 @@ const logout = require("../../helpers/Logout");
  *            description: User deleted successfully
  *          404 :
  *            description: User not found
+ * /api/v1/users/update/{id}:
+ *   put:
+ *     summary: Update the user record by the id
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The user record id
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Users'
+ *             type: objects
+ *             required:
+ *               - role
+ *               - position
+ *               - salary
+ *               - phoneNumber
+ *               - address
+ *             properties:
+ *               role: 5000
+ *               position: L3
+ *               salary: 500000
+ *               phoneNumber: 09999999923
+ *               address: Yangon
+ *     responses:
+ *       200:
+ *         description: The user record was updated
+ *       404:
+ *         description: The user record was not found
  */
 
 router.post("/createUser", user.createStaff);
 router.get("/", user.getUserList);
 
 router.delete("/deleteUser/:id", user.deleteStaff);
+router.put("/update/:id", user.updateUserData);
 
 /**
  * @swagger

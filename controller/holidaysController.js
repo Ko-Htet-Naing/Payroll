@@ -1,8 +1,10 @@
-const LeaveHelper = require("../helpers/LeaveHelper");
+const HolidayHelper = require("../helpers/HolidayHelper");
 const addHolidays = (req, res) => {
-  const { holiday_name, from, to } = req.body;
+  const { dates } = req.body;
+  if (dates == undefined || dates?.length == 0)
+    return res.status(400).send("Credential Missing");
 
-  if (!holiday_name || !from || !to) return res.status(400).send("Credential Missing");
-  LeaveHelper.checkFromToDate(from,to)
+  HolidayHelper.iterateEachItemAndSetToDB(dates);
+  console.log(dates);
 };
 module.exports = { addHolidays };

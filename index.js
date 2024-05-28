@@ -17,7 +17,7 @@ const leaveRecord = require("./routes/api/leaveRecords");
 const attendanceRequest = require("./routes/api/attendanceRequest");
 const payrollthisMonth = require("./routes/api/payroll");
 const holidays = require("./routes/api/holidays");
-
+const profileImage = require("./routes/api/profileImage");
 const swaggerDocs = require("./utils/swagger");
 
 const db = require("./models");
@@ -47,11 +47,12 @@ app.use("/api/v1/attendanceRequest", attendanceRequest);
 app.use("/api/v1/userCount", userCount);
 app.use("/api/v1/payroll", payrollthisMonth);
 app.use("/api/v1/holidays", holidays);
+app.use("/api/v1/updateProfileImage", profileImage);
 // For Regenerating Access Token
 app.use("/api/v1/refresh", handleRefresh);
 
 // Just for testing purpose
-// app.use(verifyJWT);
+app.use(verifyJWT);
 app.use("/api/v1/test", testRoute);
 
 // For handling unknown request

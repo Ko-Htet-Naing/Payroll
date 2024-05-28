@@ -17,7 +17,7 @@ let corsOptions = {
     // Always allow requests from any origin
     callback(null, true);
   },
-  credentials: true,
+  credential: true,
   optionsSuccessStatus: 200,
 };
 module.exports = corsOptions;

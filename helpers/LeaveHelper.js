@@ -19,15 +19,15 @@ class LeaveHelper {
     else return { success: false };
   }
 
-  static checkValidyOfDate(from,to){
+  static checkValidyOfDate(from, to) {
     const today = moment().format("YYYY-MM-DD");
     const fromDateCheck = moment(today).isBefore(from);
     const toDateCheck = moment(today).isBefore(to);
-    return { fromDateCheck, toDateCheck }
+    return { fromDateCheck, toDateCheck };
   }
 
   static checkFromToDate(from, to, leaveType = null) {
-    const { fromDateCheck, toDateCheck } = this.checkValidyOfDate(from,to);
+    const { fromDateCheck, toDateCheck } = this.checkValidyOfDate(from, to);
     if (!fromDateCheck && !toDateCheck) {
       // Date ကို ဟိုးအရင် ရက်တွေ မဟုတ်ရဘူးလို့ အရင်စစ်တယ်
       if (leaveType === "Annual Leave") {

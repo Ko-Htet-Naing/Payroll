@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const handleRefreshToken = async (req, res) => {
   const cookies = req.cookies;
+  console.log(cookies);
   if (!cookies?.jwt_ref) return res.status(404).send("Crential Missing");
   const refreshToken = req.cookies.jwt_ref;
   const foundUser = await Users.findOne({
@@ -20,13 +21,11 @@ const handleRefreshToken = async (req, res) => {
         process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: "3h" }
       );
-      res
-        .status(200)
-        .send({
-          user: foundUser.username,
-          roles: foundUser.role,
-          accessToken: accessToken,
-        });
+      res.status(200).send({
+        user: foundUser.username,
+        roles: foundUser.role,
+        accessToken: accessToken,
+      });
     }
   );
 };

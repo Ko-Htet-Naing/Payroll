@@ -1,4 +1,5 @@
-const { Attendance } = require("../models");
+const { Attendance, LeaveRecord } = require("../models");
+const moment = require("moment");
 
 class AttendanceClickHelper {
   static async checkUserAlreadyExistsInDB(userId, currentDate) {
@@ -29,17 +30,37 @@ class AttendanceClickHelper {
       return true;
     }
   }
+  static getPredefinedDateTime(leaveType) {
+    let startTime = null;
+    let endTime = null;
 
-  // မနက်ပိုင်း click ဖို့မေ့သွားရင်
-  static async checkMorningClickStatus(userId, currentDate) {
-    const userExists = await Attendance.findOne({
-      where: { UserId: userId, date: currentDate },
-      attributes: ["in_time"],
-    });
-    return userExists ? true : false;
+    if (leaveType === "Morning Leave") {
+      startTime = "12:30:00"; // Start time for morning leave
+      endTime = "16:30:00"; // End time for morning leave
+    } else if (leaveType === "Evening Leave") {
+      startTime = "08:30:00"; // Start time for evening leave
+      endTime = "12:30:00"; // End time for evening leave
+    } else {
+      startTime = "08:30:00"; // Default start time for no specific leave
+      endTime = "16:30:00"; // Default end time for no specific leave
+    }
+
+    return { startTime, endTime };
   }
 
-  static async checkApprovedLeaveList(userId) {}
+  static async checkUserMorningEveningLeave(userId, currentDate) {
+    const result = await LeaveRecord.findOne({
+      where: { UserId: userId, from: currentDate, to: currentDate },
+    });
+    return result;
+  }
+  static async UserInTimeStatusInDB(userId, userArrivalDate) {
+    const result = await Attendance.findOne({
+      where: { UserId: userId, date: userArrivalDate },
+      attributes: ["in_time"],
+    });
+    return result?.in_time ? true : false;
+  }
 }
 
 module.exports = AttendanceClickHelper;

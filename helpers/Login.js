@@ -23,7 +23,7 @@ const login = async (req, res) => {
   const accessToken = jwt.sign(
     { UserInfo: { username: dbUsername, role: role } },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "1m" }
+    { expiresIn: "10s" }
   );
   const refreshTokenToStore = jwt.sign(
     {
@@ -39,12 +39,12 @@ const login = async (req, res) => {
   );
 
   //Setting cookie
-  res.cookie("jwt_ref", refreshTokenToStore, {
-    secure: false, // Set to true for HTTPS
-    sameSite: "None",
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-  });
+  // res.cookie("jwt_ref", refreshTokenToStore, {
+  //   secure: false, // Set to true for HTTPS
+  //   sameSite: "None",
+  //   httpOnly: true,
+  //   maxAge: 24 * 60 * 60 * 1000,
+  // });
 
   // user ကို ပြန်ပို့မယ့် data
   const dataToSendUser = {
@@ -63,7 +63,8 @@ const login = async (req, res) => {
   };
 
   res.json({
-    token: accessToken,
+    accessToken: accessToken,
+    refreshToken: refreshTokenToStore,
     userData: dataToSendUser,
   });
 };

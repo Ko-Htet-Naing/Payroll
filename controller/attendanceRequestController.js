@@ -22,6 +22,8 @@ const createAttendanceRequest = async (req, res) => {
 const confirmRequest = async (req, res) => {
   console.log("Working Confirm Request function");
   const { reason, date, UserId, adminApproved } = req.body;
+  if (!reason || !date || !UserId)
+    return res.status(400).send("Credential Missing");
   const attendaceRequest = {
     reason: reason || "in_time_late", // "out_time_late"
     date: date || "2024-5-13",
@@ -30,44 +32,37 @@ const confirmRequest = async (req, res) => {
   };
   if (await UserHelper.checkUserInAttendanceDB(UserId)) {
     // API မှ adminApproved ကို ture လို့ထားပြီး request လုပ်လာပါက...
-    if (attendaceRequest.adminApproved) {
-      if (await UserHelper.checkUserAlreadyApproved(UserId, date)) {
-        if (await UserHelper.findUserAttendanceLeaveCount(UserId)) {
-          // User ရဲ့ AM PM ပေါ်မူတည်ပြီး time ကို ပြုပြင်ခြင်း
-          const result = await UserHelper.findAndReplace(UserId, reason, date);
-          console.log(result);
-          if (result.success) {
-            // attendance request table တွင် ရလဒ်ပေါ်မူတည်ပြီး Approved Rejected ပြင်ရန်
-            await UserHelper.updateUserStatusInDB(UserId, date);
-            res
-              .status(200)
-              .json({ message: result.message, success: result.success });
-          } else if (result.success === false) {
-            res.status(200).send({
-              message: result.message,
-              success: result.success,
-            });
-          }
-        } else {
-          res.status(401).json({
-            message: "You don't have any leave count",
-            success: false,
-          });
-        }
-      } else {
-        res.status(400).json({
-          message: "adminApproved :Admin မှ Approved လုပ်ပေးပြီးသားမို့လို့ပါ",
-          success: false,
-        });
-      }
-    } else {
-      console.log("I am in Admin Permission false case");
-      // API မှ adminApproved ကို false လို့ထားပြီး request လုပ်လာပါက...
-      await UserHelper.setUserAttendanceToRejected(UserId, date);
+    if (!attendaceRequest.adminApproved)
+      return res
+        .status(400)
+        .send(
+          "မင်းမှာ count ရှိသေးပေမဲ့ admin မှ အကြောင်းကြောင်းကြောင့် ပယ်ချလိုက်ပါတယ်."
+        );
 
-      res.status(401).json({
-        message: "Admin မှ Permission False...",
+    if (!(await UserHelper.checkUserAlreadyApproved(UserId, date)))
+      return res.status(400).json({
+        message: "adminApproved :Admin မှ Approved လုပ်ပေးပြီးသားမို့လို့ပါ",
         success: false,
+      });
+
+    if (!(await UserHelper.findUserAttendanceLeaveCount(UserId)))
+      return res.status(401).json({
+        message: "You don't have any leave count",
+        success: false,
+      });
+
+    // User ရဲ့ AM PM ပေါ်မူတည်ပြီး time ကို ပြုပြင်ခြင်း
+    const result = await UserHelper.findAndReplace(UserId, reason, date);
+    if (result.success) {
+      // attendance request table တွင် ရလဒ်ပေါ်မူတည်ပြီး Approved Rejected ပြင်ရန်
+      await UserHelper.updateUserStatusInDB(UserId, date);
+      res
+        .status(200)
+        .json({ message: result.message, success: result.success });
+    } else if (result.success === false) {
+      res.status(200).send({
+        message: result.message,
+        success: result.success,
       });
     }
   }

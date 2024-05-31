@@ -48,18 +48,19 @@ class AttendanceClickHelper {
     return { startTime, endTime };
   }
 
-  static async checkUserMorningEveningLeave(userId, currentDate) {
+  static async checkUserMorningEveningLeave(userId, currentDate, leaveDetails) {
     const result = await LeaveRecord.findOne({
       where: { UserId: userId, from: currentDate, to: currentDate },
     });
-    return result;
+    return result?.leaveType === leaveDetails && result?.status === "Approved"
+      ? true
+      : false;
   }
-  static async UserInTimeStatusInDB(userId, userArrivalDate) {
+  static async getUserClick(userId, userArrivalDate) {
     const result = await Attendance.findOne({
       where: { UserId: userId, date: userArrivalDate },
-      attributes: ["in_time"],
     });
-    return result?.in_time ? true : false;
+    return result;
   }
 }
 

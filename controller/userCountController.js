@@ -101,7 +101,7 @@ const getUserCount = async (req, res) => {
       if (totalId.length > 0) {
         const DepartmentIds = await getAttendanceWithDepartment(totalId);
         res.status(200).json({
-          employeeList: await getTotalEmployeeCount(),
+          //employeeList: await getTotalEmployeeCount(),
           departmentCount: DepartmentIds,
           totalAttendanceCount: await totalUserCount(),
           leaveList: await getLeaveCount(),

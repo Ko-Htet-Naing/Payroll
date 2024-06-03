@@ -39,17 +39,18 @@ require("./config/scheduler");
 // Routes API
 app.use("/api/v1/mapCheck", authlocation);
 // middleware
-app.use("/api/v1/users", user);
 app.use("/api/v1/departments", department);
 app.use("/api/v1/attendance", attendance);
 app.use("/api/v1/leaveRecord", leaveRecord);
 app.use("/api/v1/attendanceRequest", attendanceRequest);
 app.use("/api/v1/userCount", userCount);
-app.use("/api/v1/payroll", payrollthisMonth);
+//app.use("/api/v1/attendanceList", payrollthisMonth);
 app.use("/api/v1/holidays", holidays);
 app.use("/api/v1/updateProfileImage", profileImage);
 // For Regenerating Access Token
 app.use("/api/v1/refresh", handleRefresh);
+
+app.use("/api/v1/users", user);
 
 // Just for testing purpose
 app.use(verifyJWT);

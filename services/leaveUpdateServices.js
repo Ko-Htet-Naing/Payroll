@@ -4,15 +4,11 @@ const { Users } = require("../models");
 async function updateLeaveValue() {
   // Default Values
   const defaultValue = {
-    AnnualLeave: 16,
-    MedicalLeave: 6,
     AttendanceLeave: 3,
   };
   try {
     await Users.update(
       {
-        AnnualLeave: defaultValue.AnnualLeave,
-        MedicalLeave: defaultValue.MedicalLeave,
         AttendanceLeave: defaultValue.AttendanceLeave,
       },
       { where: {} }

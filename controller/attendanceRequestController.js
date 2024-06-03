@@ -1,5 +1,8 @@
-const { Attendance_Record, Attendance } = require("../models");
+const { Attendance_Record, Department, Users } = require("../models");
+const { Op } = require("sequelize");
 const UserHelper = require("../helpers/DBHelper");
+const { admin, message, getMessaging } = require("../config/firebaseConfig");
+const { response } = require("express");
 
 // create attendance request
 const createAttendanceRequest = async (req, res) => {
@@ -32,12 +35,31 @@ const confirmRequest = async (req, res) => {
   };
   if (await UserHelper.checkUserInAttendanceDB(UserId)) {
     // API မှ adminApproved ကို ture လို့ထားပြီး request လုပ်လာပါက...
-    if (!attendaceRequest.adminApproved)
+    if (!attendaceRequest.adminApproved) {
+      let notificationMessage = {
+        ...message,
+        notification: {
+          ...message.notification,
+          title: "Notification",
+          body: "This is test for notification",
+        },
+      };
+      getMessaging()
+        .send(notificationMessage)
+        .then((response) => {
+          res.status(200).send("Successfully sent message");
+          console.log("Successfully sent message ", response);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+      console.log(notificationMessage);
       return res
         .status(400)
         .send(
           "မင်းမှာ count ရှိသေးပေမဲ့ admin မှ အကြောင်းကြောင်းကြောင့် ပယ်ချလိုက်ပါတယ်."
         );
+    }
 
     if (!(await UserHelper.checkUserAlreadyApproved(UserId, date)))
       return res.status(400).json({
@@ -70,9 +92,69 @@ const confirmRequest = async (req, res) => {
 
 // get all attendance request
 const getAttendanceRequest = async (req, res) => {
-  const listOfRequest = await Attendance_Record.findAll();
+  const page = Math.max(0, Number.parseInt(req.query.page) || 0);
+  const size = Math.min(Math.max(Number.parseInt(req.query.size) || 10, 1), 10);
+  const {
+    username,
+    from,
+    to,
+    position,
+    department,
+    reason,
+    status,
+    employeeId,
+  } = req.query;
+
+  const totalCount = await Attendance_Record.count();
+  const totalPage = Math.ceil(totalCount / size);
+
+  const whereClause = {
+    ...(from && to && { date: { [Op.between]: [from, to] } }),
+    ...(status && { status: status }),
+    ...(reason && { reason: reason }),
+  };
+
+  const whereUser = {
+    ...(username && { username: { [Op.like]: `%${username}%` } }),
+    ...(employeeId && { EmployeeId: employeeId }),
+    ...(position && { Position: position }),
+  };
+  const userInclude = {
+    where: whereUser,
+    model: Users,
+    attributes: ["username", "EmployeeId", "Position"],
+    include: [
+      {
+        model: Department,
+        attributes: ["deptName"],
+        ...(department && { where: { deptName: department } }),
+      },
+    ],
+  };
+
+  const order = [["id", "DESC"]];
+  const listOfRequest = await Attendance_Record.findAll({
+    where: whereClause,
+    include: [userInclude],
+    order: order,
+    offset: page * size,
+    limit: size,
+  });
   if (!listOfRequest) res.status(404).json("Attendance request list not found");
-  res.status(200).json(listOfRequest);
+  res.status(200).json({
+    columns: [
+      { Header: "Name", accessor: "username" },
+      { Header: "EmployeeId", accessor: "employeeId" },
+      { Header: "Date", accessor: "date" },
+      { Header: "Position", accessor: "position" },
+      { Header: "Department", accessor: "deptName" },
+      { Header: "Reason", accessor: "reason" },
+      { Header: "Status", accessor: "status" },
+    ],
+    datas: listOfRequest,
+    totalPages: totalPage,
+    totalCount: totalCount,
+  });
 };
 
 // update status

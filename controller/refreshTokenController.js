@@ -3,9 +3,11 @@ const { Users } = require("../models");
 require("dotenv").config();
 
 const handleRefreshToken = async (req, res) => {
-  const cookies = req.cookies;
-  if (!cookies?.jwt_ref) return res.status(404).send("Crential Missing");
-  const refreshToken = req.cookies.jwt_ref;
+  const { refreshTokenFromUser } = req.body;
+  console.log(refreshTokenFromUser);
+  if (!refreshTokenFromUser)
+    return res.status(404).send("Refresh Token Required To Call This Route");
+  const refreshToken = refreshTokenFromUser;
   const foundUser = await Users.findOne({
     where: { refreshToken: refreshToken },
   });
@@ -18,15 +20,13 @@ const handleRefreshToken = async (req, res) => {
       const accessToken = jwt.sign(
         { UserInfo: { username: decoded.username, role: decoded.role } },
         process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: "3h" }
+        { expiresIn: "20s" }
       );
-      res
-        .status(200)
-        .send({
-          user: foundUser.username,
-          roles: foundUser.role,
-          accessToken: accessToken,
-        });
+      res.status(200).send({
+        user: foundUser.username,
+        roles: foundUser.role,
+        accessToken: accessToken,
+      });
     }
   );
 };

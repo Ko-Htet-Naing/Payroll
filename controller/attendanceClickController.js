@@ -1,195 +1,251 @@
 const moment = require("moment");
-const { format, isSameDay, parse, differenceInSeconds } = require("date-fns");
+const { format, isSameDay } = require("date-fns");
 const { Attendance } = require("../models");
+const AttendanceClickHelper = require("../helpers/AttendanceClickHelper");
 
-// Get authenticate date and time
+// Main function to handle real-time click
 const realTimeClick = async (req, res) => {
-  // Predefined Date And Time Function
-  const getPredefinedDateAndTime = (chooseDayTime) => {
-    const date2 = moment();
-    const dateString = date2.format("YYYY-MM-DD");
-    const currentDate = dateString.split(" ")[0];
-    if (chooseDayTime === "AM") {
-      const customTime = "08:30:00";
-      return (myCustomDate = moment(`${currentDate}T${customTime}`));
-    }
-    if (chooseDayTime === "PM") {
-      const customTime = "16:30:00";
-      return (myCustomDate = moment(`${currentDate}T${customTime}`));
-    }
-  };
-  // User DB ထဲမှာ ရှိမရှိ စစ်တဲ့ function
-  const checkUserAlreadyExistsInDB = async (userId, currentDate) => {
-    const userExists = await Attendance.findOne({
-      where: { UserId: userId, date: currentDate },
-    });
-    return userExists ? true : false;
-  };
-  // initiazlize var for hour and minute
-  let hour = null;
-  let minute = null;
-  let second = null;
-  let userArrivalDate = null;
-  let userArrivalTime = null;
-  const { dateTime, userId } = req.body;
-  if (!dateTime || !userId)
-    return res
-      .status(404)
-      .send(
-        "Date Time Missing or Uncorrect Spelling \n Give parameter name as => 'dateTime' and 'userId' "
-      );
-  userArrivalDate = dateTime.split(" ")[0]
-    ? format(dateTime.split(" ")[0], "yyyy-MM-dd")
-    : null;
-  userArrivalTime = dateTime.split(" ")[1] ? dateTime.split(" ")[1] : null;
-  const currentDate = userArrivalDate;
-  // Extract Hour Minute and Seconds
-  const parseTime = parse(userArrivalTime, "HH:mm:ss", new Date());
-  hour = parseTime.getHours();
-  minute = parseTime.getMinutes();
-  second = parseTime.getSeconds();
-  console.log(`Current Hour is ${hour} and Current Minutes is ${minute}`);
+  const { dateTime, checkingStatus, userId } = req.body;
+  if (!dateTime || !checkingStatus || !userId) {
+    return res.status(404).send("Date Time, Status or User ID is missing.");
+  }
 
-  // Leave Table မှာ User id နဲ့ ပတ်သတ်ပြီး leave ရှိမရှိ စစ် ရှိခဲ့ရင် status approved ကို စစ်
-  // Approved သာ ဖြစ်ခဲ့ရင် အချိန်ချိန်း Leave Type ပေါ်လည်း မူတည်
-  // Morning Leave သာဖြစ်ခဲ့ရင် အလုပ်ချိန် 12:30 to 4:30
-  // Evening Leave သာဖြစ်ခဲ့ရင် အလုပ်ချိန် 8:30 to 12:30
+  const userArrivalDate = format(dateTime.split(" ")[0], "yyyy-MM-dd");
+  const userArrivalTime = dateTime.split(" ")[1];
 
-  const checkUserDateExistStatus = async (optionForDayNight) => {
-    console.log("entering exist or not function");
+  if (!isSameDay(format(new Date(), "yyyy-MM-dd"), userArrivalDate)) {
+    return res.status(404).send("Mismatched date.");
+  }
 
-    // User ရဲ့ in_time ကို မနက်ခင်းမှာ စစ်
-    // false ဆိုတာ User ကို ပေးလုပ်တာ ဖြစ်ပြီး
-    // true ဆိုတာ User ကို တားမြစ်တာ ဖြစ်ပါတယ်...
-    if (optionForDayNight === "AM") {
-      console.log("Entering AM section");
-
-      const userDayCheckIn = await Attendance.findOne({
-        where: { UserId: userId, date: currentDate },
-        attributes: ["in_time", "date"],
-      });
-      console.log(userDayCheckIn);
-
-      if (userDayCheckIn === null) {
-        return false;
-      } else {
-        return true;
-      }
-    }
-    // User ရဲ့ out_time ကို ညနေခင်းမှာ စစ်
-    if (optionForDayNight === "PM") {
-      console.log("entring PM section");
-
-      const userNightCheckIn = await Attendance.findOne({
-        where: { UserId: userId, date: currentDate },
-        attributes: ["out_time", "date"],
-      });
-      if (userNightCheckIn.out_time === null) {
-        return false;
-      } else {
-        return true;
-      }
-    }
+  // လက်ရှိ user input time ကို moment object ပြောင်း
+  const currentTime = moment(dateTime, "YYYY-MM-DD HH:mm:ss");
+  // လက်ရှိ date ကို only ရယူ
+  const currentDate = moment().format("YYYY-MM-DD");
+  // ပုံမှန် ရုံးတက်ချိန်ကို သတ်မှတ်
+  const standardInTime = moment(`${currentDate} 08:30`, "YYYY-MM-DD HH:mm:ss");
+  // Morning Leave ရှိတဲ့ ဆရာကြီး ဆရာမကြီး များအတွက်
+  const lateThresholdTime = moment(
+    `${currentDate} 12:30`,
+    "YYYY-MM-DD HH:mm:ss"
+  );
+  // ပုံမှန် ရုံးဆင်းချိန်ကို သတ်မှတ်
+  const eveningEndTime = moment(`${currentDate} 16:30`, "YYYY-MM-DD HH:mm:ss"); // Assuming 5 PM as the end of the evening period
+  // စောစောထွက် တာ နောက်ကျမှ ဝင်တာတွေကို သတ်မှတ်
+  const timeDifference = {
+    late: 0, // Default to 0, adjust based on conditions
+    early: 0, // Default to 0, adjust based on conditions
   };
 
-  if (
-    isSameDay(format(new Date(), "yyyy-MM-dd"), format(dateTime, "yyyy-MM-dd"))
-  ) {
-    const checkMorningEveningStatus = format(new Date(dateTime), "a");
+  let payload = {
+    in_time: null,
+    late_in_time: null,
+    early_out_time: null,
+    out_time: null,
+  };
+  // User in / out time ပေါ်မူတည်ပြီး ဆွဲထုတ်ရန်
+  let clickOption = null;
+  console.log("I am start of the code ");
 
-    if (checkMorningEveningStatus === "AM") {
-      if (hour <= 8 && minute <= 30) {
-        console.log(await checkUserAlreadyExistsInDB(userId, currentDate));
-        console.log(userId);
-        console.log(currentDate);
-
-        // အချိန်မှီရောက်လာရင်
-        if (await checkUserAlreadyExistsInDB(userId, currentDate)) {
-          return res.status(401).send({ success: false });
-        } else {
-          if (await checkUserDateExistStatus("AM"))
-            return res.status(401).send("You already check in for morning");
-          await Attendance.create({
-            in_time: userArrivalTime,
-            date: userArrivalDate,
-            UserId: userId,
-          });
-          return res.status(200).send({ success: true });
-        }
-      }
-      if (hour >= 8 && minute > 30) {
-        // Leave ရှိလား မရှိဘူးလား
-        // နောက်ကျမှ ဝင်လာခဲ့ရင်
-        if (await checkUserDateExistStatus("AM"))
-          return res.status(401).send("You already check in for morning");
-        const currentDate = getPredefinedDateAndTime("AM");
-        const lateInTime = moment(dateTime).diff(currentDate, "minutes");
-
-        // record ရှိမရှိ အရင် စစ်မယ် မရှိမှ create လုပ်မယ် ရှိရင် update လုပ်မယ်...
-        if (await checkUserAlreadyExistsInDB(userId, currentDate)) {
-          await Attendance.update(
-            {
-              in_time: userArrivalTime,
-            },
-            { where: { UserId: userId, date: currentDate } }
-          );
-          return res.status(200).send({ success: true });
-        } else {
-          // record လုံးဝ အသစ်ဆိုရင်
-          await Attendance.create({
-            in_time: userArrivalTime,
-            late_in_time: lateInTime,
-            date: userArrivalDate,
-            UserId: userId,
-          });
-          return res.status(200).send({ success: true });
-        }
-      }
-    } else if (checkMorningEveningStatus === "PM") {
-      // user ကို အရင် ရှာ
-      if ((await checkUserAlreadyExistsInDB(userId, currentDate)) == false) {
-        return res
-          .status(404)
-          .send(
-            "Your record doesn't found. မနက်က checkin လုပ်ဖို့ မေ့သွားတာနေမယ်. request ပြန်တင်ပါ..."
-          );
-      }
-      if (hour >= 16 && minute >= 30) {
-        // user ကို လည်း ရှာတွေ့ပြီး
-        // ပုံမှန်အချိန်ထွက်ရင်
-        if (await checkUserDateExistStatus("PM"))
-          return res.status(401).send("You already check out for evening 1");
-        await Attendance.update(
-          {
-            out_time: userArrivalTime,
-          },
-          {
-            where: {
-              UserId: userId,
-              date: currentDate,
-            },
-          }
+  // Check In ကို process လုပ်ပေးရန်
+  if (checkingStatus === "in") {
+    clickOption = "in_time";
+    // 8 ခွဲ နှင့် 8 ခွဲအောက် ဝင်လာသူများအတွက်
+    if (
+      currentTime.isBefore(standardInTime) ||
+      currentTime.isSame(standardInTime)
+    ) {
+      payload = {
+        ...payload,
+        in_time: userArrivalTime,
+        late_in_time: 0,
+      };
+    }
+    // 8 ခွဲ အထက်နှင့် 12 ခွဲအကြားဝင်လာသူများအတွက်
+    if (
+      currentTime.isAfter(standardInTime) &&
+      currentTime.isBefore(lateThresholdTime)
+    ) {
+      const hasMorningLeave =
+        await AttendanceClickHelper.checkUserMorningEveningLeave(
+          userId,
+          userArrivalDate,
+          "Morning Leave"
         );
-        return res.status(200).send({ success: true });
+      console.log("has morning leave ? : ", hasMorningLeave);
+      if (!hasMorningLeave) {
+        console.log("I am in section !hasMoningLeave");
+        payload = {
+          ...payload,
+          in_time: userArrivalTime,
+          late_in_time: currentTime.diff(standardInTime, "minutes"), // Count as late minutes if no morning leave
+        };
       } else {
-        // User ကိုရှာတွေ့ပြီး
-        // နဲနဲစောထွက်ရင်
-        if (await checkUserDateExistStatus("PM"))
-          return res.status(401).send("You already check out for evening");
-        const currentDate = getPredefinedDateAndTime("PM");
-        const earlyOutTime = moment(currentDate).diff(dateTime, "minutes");
-        await Attendance.update(
-          {
-            out_time: userArrivalTime,
-            early_out_time: earlyOutTime,
-          },
-          { where: { UserId: userId, date: currentDate } }
+        console.log("I am also in this case");
+        payload = {
+          ...payload,
+          in_time: userArrivalTime,
+          late_in_time: 0, // Reset late time as they have an approved morning leave
+        };
+      }
+    }
+    // ၁၂ ခွဲ နှင့် ၁၂ ခွဲ အထက် ဝင်လာသူများအတွက်
+    if (
+      currentTime.isAfter(lateThresholdTime) ||
+      currentTime.isSame(lateThresholdTime)
+    ) {
+      const hasMorningLeave =
+        await AttendanceClickHelper.checkUserMorningEveningLeave(
+          userId,
+          userArrivalDate,
+          "Morning Leave"
         );
-
-        return res.status(200).send({ success: true });
+      // Morning Leave မရှိ အချိန်ကလည်း 12 ခွဲထက်ကော်သွားရင်
+      if (!hasMorningLeave) {
+        payload = {
+          ...payload,
+          in_time: userArrivalTime,
+          late_in_time: currentTime.diff(standardInTime, "minutes"),
+        };
+      } else {
+        console.log("I have morning leave but I over 12 : 30 pm ");
+        // Morning Leave တော့ရှိ အချိန်ကတော့ ၁၂ ထက်ကျော်သွားရင်
+        payload = {
+          ...payload,
+          in_time: userArrivalTime,
+          late_in_time: currentTime.diff(lateThresholdTime, "minutes"),
+        };
       }
     }
   }
+
+  if (checkingStatus === "out") {
+    clickOption = "out_time";
+    // 12ခွဲ နှင့် 12ခွဲ အောက် မှာ check out လာနှိပ်ရင်
+    if (currentTime.isBefore(lateThresholdTime)) {
+      const hasEveningLeave =
+        await AttendanceClickHelper.checkUserMorningEveningLeave(
+          userId,
+          userArrivalDate,
+          "Evening Leave"
+        );
+      if (!hasEveningLeave) {
+        payload = {
+          ...payload,
+          out_time: userArrivalTime,
+          early_out_time: Math.abs(currentTime.diff(eveningEndTime, "minutes")),
+        };
+      } else {
+        payload = {
+          ...payload,
+          out_time: userArrivalTime,
+          early_out_time: Math.abs(
+            currentTime.diff(lateThresholdTime, "minutes")
+          ),
+        };
+      }
+    }
+    // 12 ခွဲအတိမှာ ထွက်ရင်
+    if (currentTime.isSame(lateThresholdTime)) {
+      const hasEveningLeave =
+        await AttendanceClickHelper.checkUserMorningEveningLeave(
+          userId,
+          userArrivalDate,
+          "Evening Leave"
+        );
+      if (!hasEveningLeave) {
+        payload = {
+          ...payload,
+          out_time: userArrivalTime,
+          early_out_time: Math.abs(currentTime.diff(eveningEndTime, "minutes")),
+        };
+      } else {
+        payload = {
+          ...payload,
+          out_time: userArrivalTime,
+          early_out_time: 0,
+        };
+      }
+    }
+    // 12ခွဲ အထက် 4ခွဲ အောက်မှာ check out လာနှိပ်ရင်
+    if (
+      currentTime.isAfter(lateThresholdTime) &&
+      currentTime.isBefore(eveningEndTime)
+    ) {
+      const hasEveningLeave =
+        await AttendanceClickHelper.checkUserMorningEveningLeave(
+          userId,
+          userArrivalDate,
+          "Evening Leave"
+        );
+      if (hasEveningLeave) {
+        payload = {
+          ...payload,
+          out_time: userArrivalTime,
+          early_out_time: 0,
+        };
+      } else {
+        payload = {
+          ...payload,
+          out_time: userArrivalTime,
+          early_out_time: Math.abs(currentTime.diff(eveningEndTime, "minutes")),
+        };
+      }
+    }
+    // 4ခွဲ အတိ နှင့် 4ခွဲ နောက်ပိုင်းမှာ check out လာနှိပ်ရင်
+    if (
+      currentTime.isAfter(eveningEndTime) ||
+      currentTime.isSame(eveningEndTime)
+    ) {
+      payload = {
+        ...payload,
+        out_time: userArrivalTime,
+        early_out_time: 0,
+      };
+    }
+  }
+
+  console.log(payload);
+  const isUserAlradyCheck = await AttendanceClickHelper.getUserClick(
+    userId,
+    dateTime
+  );
+  console.log(isUserAlradyCheck);
+  if (isUserAlradyCheck) {
+    if (clickOption === "in_time" && isUserAlradyCheck.in_time) {
+      return res.status(200).send("You have already checked in this morning.");
+    }
+    if (clickOption === "out_time" && isUserAlradyCheck.out_time) {
+      return res.status(200).send("You have already checked out this evening.");
+    }
+  }
+
+  if (!isUserAlradyCheck?.in_time) {
+    await Attendance.create({
+      in_time: payload.in_time,
+      out_time: payload.out_time,
+      late_in_time: payload.late_in_time,
+      early_out_time: payload.early_out_time,
+      UserId: userId,
+      date: dateTime,
+    });
+  }
+  console.log("Evening Out Time is : ", isUserAlradyCheck);
+  if (isUserAlradyCheck?.out_time === null) {
+    await Attendance.update(
+      {
+        out_time: payload.out_time,
+        early_out_time: payload.early_out_time,
+      },
+      {
+        where: {
+          userId: userId,
+          date: dateTime,
+        },
+      }
+    );
+  }
+
+  return res.status(200).send({ success: true });
 };
 module.exports = {
   realTimeClick,

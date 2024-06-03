@@ -1,20 +1,9 @@
 const { Users, Department } = require("../models");
-const admin = require("firebase-admin");
 
 const { hashPassword, comparePassword } = require("../helpers/Hash");
 const { Op } = require("sequelize");
 
 require("dotenv").config();
-
-// Initialize Firebase Admin SDK with my service account credentials
-const serviceAccount = require("../private/imagestorage-2095c-firebase-adminsdk-ehic7-f0929e1d93.json");
-const { refreshToken } = require("firebase-admin/app");
-
-// Initialize app with admin variable
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: "gs://imagestorage-2095c.appspot.com",
-});
 
 // Hook to synchronize user after user are inserted
 Users.addHook("afterCreate", async (user, options) => {

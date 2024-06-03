@@ -6,9 +6,12 @@ class payRollHelper {
     let count = 0;
     let start = startDate;
     console.log("start", start);
+    // const date = new Date("2024-5-25").getDay();
+    // console.log("date", date);
 
     while (start <= endDate) {
       let day = start.getDay();
+      console.log("day", day);
 
       if (day === 0 || day === 6) {
         // 0 = Sunday, 6 = Saturday
@@ -26,6 +29,7 @@ class payRollHelper {
     //   date.setDate(date.getDate() + 1);
     // }
 
+    console.log("count", count);
     return count;
   }
 
@@ -38,7 +42,7 @@ class payRollHelper {
       });
 
       const attendanceRecords = await Attendance.findAll({
-        attributes: ["date"],
+        attributes: ["date", "username"],
         where: {
           UserId: userId,
           date: { [Op.between]: [startDate, endDate] }, // Filter records for the current month
@@ -139,8 +143,8 @@ class payRollHelper {
         //console.log(leaveDays);
 
         if (
-          leaveRecords.status === "Medical Leave" ||
-          leaveRecords.status === "Annual Leave"
+          leaveRecords.leaveType === "Medical Leave" ||
+          leaveRecords.leaveType === "Annual Leave"
         ) {
           totalHoursWorked += leaveDays * 8;
         } else {

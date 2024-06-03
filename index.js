@@ -8,12 +8,15 @@ const cors = require("cors");
 const corsOptions = require("./config/allowOrigin");
 const cookieParser = require("cookie-parser");
 const userCount = require("./routes/api/userCount");
+
+// Auth လုပ်ချိန်တွင်
 const verifyJWT = require("./middleware/verifyJWT");
 
 const attendance = require("./routes/api/attendance");
 const leaveRecord = require("./routes/api/leaveRecords");
 const attendanceRequest = require("./routes/api/attendanceRequest");
 const payrollthisMonth = require("./routes/api/payroll");
+const holidays = require("./routes/api/holidays");
 
 const swaggerDocs = require("./utils/swagger");
 
@@ -30,6 +33,9 @@ app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+// Default value resetter
+require("./config/scheduler");
+
 // Routes API
 app.use("/api/v1/mapCheck", authlocation);
 // middleware
@@ -38,7 +44,8 @@ app.use("/api/v1/attendance", attendance);
 app.use("/api/v1/leaveRecord", leaveRecord);
 app.use("/api/v1/attendanceRequest", attendanceRequest);
 app.use("/api/v1/userCount", userCount);
-app.use("/api/v1/payroll", payrollthisMonth);
+//app.use("/api/v1/attendanceList", payrollthisMonth);
+app.use("/api/v1/holidays", holidays);
 // For Regenerating Access Token
 app.use("/api/v1/refresh", handleRefresh);
 

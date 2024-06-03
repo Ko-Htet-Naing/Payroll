@@ -2,7 +2,7 @@ const { Users, Department } = require("../models");
 const admin = require("firebase-admin");
 
 const { hashPassword, comparePassword } = require("../helpers/Hash");
-const { Op, or } = require("sequelize");
+const { Op } = require("sequelize");
 
 require("dotenv").config();
 
@@ -98,28 +98,6 @@ const createStaff = async (req, res) => {
   // Check Also for profile image exists
   // if (!profileImage) return res.status(404).send("Upload File Not Found");
   const hashedPassword = await hashPassword(password);
-  // const { id } = await Department.findOne({
-  //   where: { deptName: "Software" },
-  // });
-
-  // Upload Image to Firebase
-  // Variable to store upload URL
-  // let imageUrl = "";
-  // try {
-  // Upload file to Firebase Storage
-  // const bucket = admin.storage().bucket();
-  // const fileUpload = bucket.file(profileImage.originalname);
-  // const stream = fileUpload.createWriteStream({
-  //   metadata: {
-  //     contentType: profileImage.mimetype,
-  //   },
-  // });
-
-  // Handle Successful upload
-  // stream.on("finish", async () => {
-  //   // Get the uploaded image URL
-  //   imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileUpload.name}`;
-
   // Create user data with the file URL
   const userData = {
     username: username || "Hnin Hnin",
@@ -142,72 +120,52 @@ const createStaff = async (req, res) => {
     DepartmentId: departmentId || 2,
   };
 
-  // Create the user with the user data
-  await Users.create(userData);
-
-  // Send success response
-  res.status(200).send({ username: userData.username });
-  // });
-
-  // Handle upload error
-  // stream.on("error", (err) => {
-  //   console.error("Error uploading file to Firebase Storage:", err);
-  //   res.status(500).send("Failed to upload image");
-  // });
-
-  // Pipe the file data to the Firebase Storage stream
-  // stream.end(profileImage.buffer);
+  try {
+    // Create the user with the user data
+    await Users.create(userData);
+    res.status(201).json("Created User Successfully");
+  } catch (error) {
+    if (error.name === "SequelizeUniqueConstraintError") {
+      res.status(400).json({ message: "Employee ID or NRC already exists." });
+    } else {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
 };
-// catch (err) {
-//   console.error("Error uploading file to Firebase Storage:", err);
-//   res.status(500).send("Failed to upload image");
-// }
-// };
 
 const getUserList = async (req, res, next) => {
-  const pageAsNumber = Number.parseInt(req.query.page);
-  const sizeAsNumber = Number.parseInt(req.query.size);
+  const page = Math.max(0, Number.parseInt(req.query.page) || 0);
+  const size = Math.min(Math.max(Number.parseInt(req.query.size) || 10, 1), 10);
 
-  const position = req.query.position;
-  const username = req.query.username;
-  const sort = req.query.sort;
-
-  let page = 0;
-  if (!Number.isNaN(pageAsNumber) && pageAsNumber > 0) {
-    page = pageAsNumber;
-  }
-
-  // show 10 attendances
-  let size = 10;
-  if (
-    !Number.isNaN(sizeAsNumber) &&
-    !(sizeAsNumber > 10) &&
-    !(sizeAsNumber < 1)
-  ) {
-    size = sizeAsNumber;
-  }
+  const { position, department, username, sort, employeeId } = req.query;
 
   const totalCount = await Users.count();
   const totalPage = Math.ceil(totalCount / size);
 
   try {
-    let whereClause = {};
-    // filter by position
-    if (position) {
-      whereClause.Position = position;
-    }
+    const whereClause = {
+      ...(position && { Position: position }),
+      ...(username && { username: { [Op.like]: `%${username}%` } }),
+      ...(employeeId && { EmployeeId: employeeId }),
+    };
+    // Define a mapping from sort parameter to order configuration
+    const sortOrders = {
+      desc: [["username", "DESC"]],
+      asc: [["username", "ASC"]],
+    };
 
-    // search by username
-    if (username) {
-      whereClause.username = { [Op.like]: `%${username}%` };
-    }
-
-    // sort by username
-    const order =
-      sort === "desc" ? [["username", "DESC"]] : [["username", "ASC"]];
+    // Use the sort parameter to determine the order, defaulting to [["id", "DESC"]] if sort is not specified or invalid
+    let order = sortOrders[sort] || [["id", "DESC"]];
     const users = await Users.findAll({
       where: whereClause,
-      include: [{ model: Department, attributes: ["DeptName"] }],
+      include: [
+        {
+          model: Department,
+          attributes: ["DeptName"],
+          ...(department && { where: { DeptName: department } }),
+        },
+      ],
       order: order,
       limit: size,
       offset: page * size,
@@ -222,7 +180,9 @@ const getUserList = async (req, res, next) => {
         { header: "annualLeave", accessor: "annualLeave" },
         { header: "medicalLeave", accessor: "medicalLeave" },
         { header: "attendanceLeave", accessor: "attendanceLeave" },
-        { header: "departmentName", accessor: "departmentName" },
+        { header: "departmentName", accessor: "deptName" },
+        { header: "nrc", accessor: "NRC" },
+        { header: "phoneNumber", accessor: "PhoneNumber" },
       ],
       datas: users,
       totalPage,

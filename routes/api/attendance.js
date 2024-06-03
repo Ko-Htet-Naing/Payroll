@@ -6,10 +6,9 @@ const attendanceClick = require("../../controller/attendanceClickController");
 /**
  * @swagger
  * tags:
- *   name: Attendance
- *   description: The Attendance managing API
- * paths:
- *   /api/v1/attendance/click:
+ *      name: Attendance
+ *      description: The Attendance managing API
+ * /api/v1/attendance/click:
  *      post:
  *        summary: Attendance managing API
  *        tags: [Attendance]
@@ -36,7 +35,7 @@ const attendanceClick = require("../../controller/attendanceClickController");
  *            description: user login created
  *          400 :
  *            description: Invalid input
- *   components:
+ * components:
  *      parameters:
  *        PageParam:
  *          name: page
@@ -48,7 +47,7 @@ const attendanceClick = require("../../controller/attendanceClickController");
  *            minimum: 0
  *            default: 0
  *        PageSizeParam:
- *          name: pageSize
+ *          name: size
  *          in: query
  *          description: The number of items per page
  *          required: false
@@ -80,7 +79,29 @@ const attendanceClick = require("../../controller/attendanceClickController");
  *          schema:
  *            type: string
  *            format: date
- *   /api/v1/attendance:
+ *        PositionQueryParam:
+ *          name: position
+ *          in: query
+ *          description: The position to search for
+ *          required: false
+ *          schema:
+ *            type: string
+ *        DepartmentQueryParam:
+ *          name: department
+ *          in: query
+ *          description: The department name to search for
+ *          required: false
+ *          schema:
+ *            type: string
+ *        EmployeeIdQueryParam:
+ *          name: employeeId
+ *          in: query
+ *          description: The employee id to search for
+ *          required: false
+ *          schema:
+ *            type: string
+ *
+ * /api/v1/attendance:
  *      get:
  *        summary: Lists all the attendance
  *        tags: [Attendance]
@@ -88,6 +109,33 @@ const attendanceClick = require("../../controller/attendanceClickController");
  *          - $ref: '#/components/parameters/PageParam'
  *          - $ref: '#/components/parameters/PageSizeParam'
  *          - $ref: '#/components/parameters/UsernameQueryParam'
+ *          - $ref: '#/components/parameters/FromDateQueryParam'
+ *          - $ref: '#/components/parameters/ToDateQueryParam'
+ *          - $ref: '#/components/parameters/PositionQueryParam'
+ *          - $ref: '#/components/parameters/DepartmentQueryParam'
+ *          - $ref: '#/components/parameters/EmployeeIdQueryParam'
+ *        responses:
+ *          200:
+ *            description: The list of the attendance
+ *            content:
+ *            application/json:
+ *              schema:
+ *                type: array
+ *                items:
+ *                  $ref: '#/components/schemas/Attendance'
+ * /api/v1/attendance/{UserId}:
+ *      get:
+ *        summary: Lists all the attendance by userId
+ *        tags: [Attendance]
+ *        parameters:
+ *          - in: path
+ *            name: UserId
+ *            schema:
+ *              type: integer
+ *            required: true
+ *            description: the user id
+ *          - $ref: '#/components/parameters/PageParam'
+ *          - $ref: '#/components/parameters/PageSizeParam'
  *          - $ref: '#/components/parameters/FromDateQueryParam'
  *          - $ref: '#/components/parameters/ToDateQueryParam'
  *        responses:
@@ -99,8 +147,10 @@ const attendanceClick = require("../../controller/attendanceClickController");
  *                type: array
  *                items:
  *                  $ref: '#/components/schemas/Attendance'
+ *
  */
 router.get("/", attendanceController.getAttendance);
 router.post("/click", attendanceClick.realTimeClick);
+router.get("/:UserId", attendanceController.getAttendanceByUserId);
 
 module.exports = router;

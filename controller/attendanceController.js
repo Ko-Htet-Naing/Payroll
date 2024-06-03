@@ -1,91 +1,99 @@
 const moment = require("moment");
-const { Attendance, Users, Department } = require("../models");
-const { Op } = require("sequelize");
+const attendanceHelper = require("../helpers/AttendanceHelper");
+const { get } = require("firebase/database");
 
-// get the list of attendance
+const parseQueryParams = (req) => ({
+  page: Math.max(0, Number.parseInt(req.query.page) || 0),
+  size: Math.min(Math.max(Number.parseInt(req.query.size) || 10, 1), 10),
+  username: req.query.username,
+  fromDate: req.query.fromDate,
+  toDate: req.query.toDate,
+  position: req.query.position,
+  department: req.query.department,
+  employeeId: req.query.employeeId,
+});
+
 const getAttendance = async (req, res) => {
-  const pageAsNumber = Number.parseInt(req.query.page);
-  const sizeAsNumber = Number.parseInt(req.query.size);
-  const fromDate = req.query.fromDate;
-  const toDate = req.query.toDate;
-  const username = req.query.username;
-
-  let page = 0;
-  if (!Number.isNaN(pageAsNumber) && pageAsNumber > 0) {
-    page = pageAsNumber;
-  }
-
-  // show 10 attendances
-  let size = 10;
-  if (
-    !Number.isNaN(sizeAsNumber) &&
-    !(sizeAsNumber > 10) &&
-    !(sizeAsNumber < 1)
-  ) {
-    size = sizeAsNumber;
-  }
-
-  const totalCount = await Attendance.count();
-  // to get totacl Attendance Count in today
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0"); // Months are zero indexed, so add 1
-  const day = String(today.getDate()).padStart(2, "0");
-  const formattedDate = `${year}-${month}-${day}`;
-  // console.log("formatted data", formattedDate);
-  // console.log("total Count", totalCount);
-
-  const totalCountToday = await Attendance.count({
-    where: { date: formattedDate },
-  });
-  //console.log("totalCountToday", totalCountToday);
-  const totalPage = Math.ceil(totalCount / size);
+  const {
+    page,
+    size,
+    username,
+    fromDate,
+    toDate,
+    position,
+    department,
+    employeeId,
+  } = parseQueryParams(req);
 
   try {
-    let whereUsername = {};
-    let whereClause = {};
-
-    // filter by date
-    if (fromDate || toDate) {
-      whereClause.date = { [Op.between]: [fromDate, toDate] };
-    }
-    if (username) {
-      whereUsername.username = {
-        [Op.like]: `%${username}%`,
-      };
-    }
-
-    const order = [["date", "DESC"]];
-    const attendance = await Attendance.findAll({
-      where: whereClause,
-      include: [
-        {
-          model: Users,
-          attributes: ["username", "Position"],
-          where: whereUsername,
-          include: [{ model: Department, attributes: ["deptName"] }],
-        },
-      ],
-      order: order,
-      limit: size,
-      offset: page * size,
+    const totalCount = await attendanceHelper.getTotalAttendanceCount();
+    const attendanceList = await attendanceHelper.getAttendanceList({
+      page,
+      size,
+      username,
+      fromDate,
+      toDate,
+      position,
+      department,
+      employeeId,
     });
-    if (!attendance) return res.status(404).json("Attendance not found");
+
+    if (!attendanceList) return res.status(404).json("Attendance not found");
     res.status(200).json({
       columns: [
         { Header: "Name", accessor: "username" },
         { Header: "Date", accessor: "date" },
         { Header: "Department", accessor: "department" },
         { Header: "Position", accessor: "position" },
-        { Header: "InTime", accessor: "inTime" },
-        { Header: "OutTime", accessor: "outTime" },
+        { Header: "Intime", accessor: "intime" },
+        { Header: "Outtime", accessor: "outtime" },
+        { Header: "EmployeeId", accessor: "employeeId" },
       ],
-      datas: attendance,
-      totalPage,
-      totalCountToday,
+      datas: attendanceList,
+      totalPage: Math.ceil(totalCount / size),
+      totalCount,
     });
   } catch (error) {
     console.error(error);
   }
 };
-module.exports = { getAttendance };
+
+// တယောက်ချင်းစီရဲ့ attendance list
+
+const getAttendanceByUserId = async (req, res) => {
+  const userId = req.params.UserId;
+  const { page, size, fromDate, toDate } = parseQueryParams(req);
+
+  try {
+    const totalCount = await attendanceHelper.getTotalAttendacneCountByUserId(
+      userId
+    );
+    const attendanceListByUserId = await attendanceHelper.getAttendanceList({
+      page,
+      size,
+      userId,
+      fromDate,
+      toDate,
+    });
+
+    if (!attendanceListByUserId)
+      return res.status(404).json("Attendance not found");
+    res.status(200).json({
+      columns: [
+        { Header: "Name", accessor: "username" },
+        { Header: "Date", accessor: "date" },
+        { Header: "Department", accessor: "department" },
+        { Header: "Position", accessor: "position" },
+        { Header: "Intime", accessor: "intime" },
+        { Header: "Outtime", accessor: "outtime" },
+        { Header: "EmployeeId", accessor: "employeeId" },
+      ],
+      datas: attendanceListByUserId,
+      totalPage: Math.ceil(totalCount / size),
+      totalCount,
+    });
+  } catch (error) {
+    console.error(error);
+  }
+};
+module.exports = { getAttendance, getAttendanceByUserId };

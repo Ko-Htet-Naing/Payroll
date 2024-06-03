@@ -24,9 +24,7 @@ class UserHelper {
   // Check User Exists in Attendance Table
   static async checkUserInAttendanceDB(userId) {
     try {
-      console.log("I am in checking");
       const user = await Attendance.findOne({ where: { UserId: userId } });
-      console.log(!!user);
       return !!user; // return true if user exists, otherwise false
     } catch (error) {
       console.log("Error while finding attendance in database", error);
@@ -47,7 +45,14 @@ class UserHelper {
             date: userDate,
           },
         });
-        console.log(isInTimeNull);
+        console.log("checking no exists user ", isInTimeNull);
+        // (UserId, date) သုံးပြီး တိုက်စစ်လို့ သူ့ လက်ရှိ data တွေနဲ့ တယောက်နဲ့ မှ မကိုက်ညီရင်
+        if (isInTimeNull === null) {
+          return {
+            success: false,
+            message: "No User Find With This Information...",
+          };
+        }
         if (isInTimeNull?.in_time === null) {
           try {
             const result = await Attendance.update(
@@ -68,6 +73,10 @@ class UserHelper {
                   id: userId,
                 },
               });
+              return {
+                success: true,
+                message: "Successfully Updated Your Information",
+              };
             } else {
               // Handle the case where no rows were updated
               console.log(
@@ -83,7 +92,11 @@ class UserHelper {
           }
           return true;
         } else {
-          return false;
+          return {
+            success: false,
+            message:
+              "အဲ့နေ့ မနက်ပိုင်းက လက်ရှိ id နဲ့ သက်ဆိုင်တဲ့ cell မှာ null မဖြစ်နေပါဘူး...",
+          };
         }
       } catch (error) {
         console.log("Error while updating attendance in database", error);
@@ -99,6 +112,13 @@ class UserHelper {
             date: userDate,
           },
         });
+        console.log(isOutTimeNull);
+        if (isOutTimeNull === null) {
+          return {
+            success: false,
+            message: "No User Find With This Information...",
+          };
+        }
         if (isOutTimeNull?.out_time === null) {
           try {
             const result = await Attendance.update(
@@ -111,23 +131,16 @@ class UserHelper {
               }
             );
             if (result[0] > 0) {
-              // Check User Count before updating (avoiding error)
-              const checkUserCount = await Users.findOne({
-                attributes: ["AttendanceLeave"],
+              await Users.decrement("AttendanceLeave", {
+                by: 1,
                 where: {
                   id: userId,
                 },
               });
-              if (checkUserCount.AttendanceLeave !== 0) {
-                await Users.decrement("AttendanceLeave", {
-                  by: 1,
-                  where: {
-                    id: userId,
-                  },
-                });
-              }
-            } else {
-              return false;
+              return {
+                success: true,
+                message: "Successfully Updated Your Information",
+              };
             }
           } catch (error) {
             console.log(
@@ -138,7 +151,11 @@ class UserHelper {
           }
           return true;
         } else {
-          return false;
+          return {
+            success: false,
+            message:
+              "အဲ့နေ့ ညနေပိုင်းက လက်ရှိ id နဲ့ သက်ဆိုင်တဲ့ cell မှာ null မဖြစ်နေပါဘူး...",
+          };
         }
       } catch (error) {
         console.log("Error while updating attendance in database", error);
@@ -185,7 +202,6 @@ class UserHelper {
   // Pending ဆိုရင် false ပြန်
   static async checkUserAlreadyApproved(userId, date) {
     // Attendance Records ထဲမှာ Pending state နဲ့ Approved State တွေကို ရှာမယ်
-    console.log("I am in checkUserAlreadyApproved function");
     try {
       const result = await Attendance_Record.findOne({
         where: {
@@ -199,7 +215,7 @@ class UserHelper {
           // Approved ဖြစ်ပြီးသားဆိုရင် false ဆိုတာ အလုပ်ပေးမလုပ်တဲ့ သဘော
           // Approved ဖြစ်နေပြီးသားဆိုတာ User ကို အကြောင်းပြန်ပေးမယ်
           return false;
-        } else {
+        } else if (result.status === "Pending") {
           // Pending ဆိုမှ true ပြန်ပြီး အလုပ်ပေးလုပ်မယ်ဆိုတဲ့ သဘော
           return true;
         }
@@ -228,6 +244,33 @@ class UserHelper {
       "Here is return of checkUser",
       await UserHelper.checkUserAlreadyApproved(UserId, date)
     );
+  }
+
+  static async createNewAttendanceRequest(objects) {
+    try {
+      const existingRequest = await Attendance_Record.findOne({
+        where: {
+          reason: objects.reason,
+          date: objects.date,
+          UserId: objects.UserId,
+        },
+      });
+      // တိုက်စစ်တုန်း ထပ်နေတဲ့ data ရှိမနေလို့ Null နှင့်စစ်ထားတာ..
+      if (existingRequest === null) {
+        await Attendance_Record.create({
+          reason: objects.reason,
+          date: objects.date,
+          UserId: objects.UserId,
+        });
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.log("Error while adding new user : ", error);
+      throw new Error(error);
+      return [];
+    }
   }
 }
 

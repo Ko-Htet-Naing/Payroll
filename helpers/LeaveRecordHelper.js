@@ -3,23 +3,13 @@ const moment = require("moment");
 const { LeaveRecord, Users, Department } = require("../models"); // Adjust the import according to your project structure
 
 async function getTotalLeaveCount() {
-  try {
-    const totalCount = await LeaveRecord.count();
-    return totalCount;
-  } catch (error) {
-    console.error("Error counting leave records:", error);
-    throw error;
-  }
+  const totalCount = await LeaveRecord.count();
+  return totalCount;
 }
 
 async function getTotalLeaveCountByUserId(userId) {
-  try {
-    const totalCount = await LeaveRecord.count({ where: { UserId: userId } });
-    return totalCount;
-  } catch (error) {
-    console.error("Error counting leave records:", error);
-    throw error;
-  }
+  const totalCount = await LeaveRecord.count({ where: { UserId: userId } });
+  return totalCount;
 }
 
 async function getLeaveList({
@@ -30,44 +20,48 @@ async function getLeaveList({
   from,
   to,
   status,
+  department,
+  leaveType,
+  employeeId,
 }) {
   try {
-    let whereClause = {};
-    let whereUsername = {};
+    const whereClause = {
+      ...(from &&
+        to && {
+          from: { [Op.between]: [from, to] },
+          to: { [Op.between]: [from, to] },
+        }),
+      ...(status && { status }),
+      ...(userId && { UserId: userId }),
+      ...(leaveType && { leaveType }),
+    };
+    const whereUser = {
+      ...(username && { username: { [Op.like]: `%${username}%` } }),
+      ...(employeeId && { EmployeeId: employeeId }),
+    };
 
-    if (from && to) {
-      whereClause.from = { [Op.between]: [from, to] };
-      whereClause.to = { [Op.between]: [from, to] };
-    }
-
-    if (status) {
-      whereClause.status = status;
-    }
-
-    if (userId) {
-      whereClause.UserId = userId;
-    }
-
-    if (username) {
-      whereUsername.username = {
-        [Op.like]: `%${username}%`,
-      };
-    }
-
-    const leaveList = await LeaveRecord.findAll({
-      where: whereClause,
+    const userInclude = {
+      where: whereUser,
+      //...(username && { where: { username: { [Op.like]: `%${username}%` } } }),
+      model: Users,
+      attributes: ["username", "DepartmentId", "Position", "EmployeeId"],
       include: [
         {
-          model: Users,
-          where: whereUsername,
-          attributes: ["username", "DepartmentId", "Position"],
-          include: [{ model: Department, attributes: ["deptName"] }],
+          model: Department,
+          attributes: ["deptName"],
+          ...(department && { where: { deptName: department } }),
         },
       ],
+    };
+
+    const order = [["id", "DESC"]];
+    const leaveList = await LeaveRecord.findAll({
+      where: whereClause,
+      include: [userInclude],
+      order: order,
       limit: size,
       offset: page * size,
     });
-
     return leaveList;
   } catch (error) {
     console.error("Error fetching leave records:", error);
@@ -95,78 +89,70 @@ function isAfterThreeDays(dateToCheck) {
 }
 
 async function incrementLeaveCount(leaveRecord) {
-  const users = await Users.findByPk(leaveRecord.UserId);
-  if (leaveRecord.leaveType === "Medical Leave" && users.MedicalLeave < 6) {
-    await users.increment("MedicalLeave", { by: 1 });
-  }
-
+  const user = await Users.findByPk(leaveRecord.UserId);
   const leaveDays = calculateLeaveDays(leaveRecord.from, leaveRecord.to);
-  if (leaveRecord.leaveType === "Annual Leave" && users.AnnualLeave < 16) {
-    await users.increment("AnnualLeave", {
-      by: leaveDays,
-    });
-  }
-  if (
-    leaveRecord.leaveType === "Morning Leave" ||
-    (leaveRecord.leaveType === "Evening Leave" && users.MedicalLeave < 6)
-  ) {
-    await users.increment("MedicalLeave", { by: 0.5 });
+  switch (leaveRecord.leaveType) {
+    case "Medical Leave":
+      if (user.MedicalLeave < 30) {
+        await user.increment("MedicalLeave", { by: leaveDays });
+      }
+      break;
+    case "Annual Leave":
+      if (user.AnnualLeave < 16) {
+        await user.increment("AnnualLeave", { by: leaveDays });
+      }
+      break;
+    case "Morning Leave":
+    case "Evening Leave":
+      if (user.MedicalLeave < 30) {
+        await user.increment("MedicalLeave", { by: 0.5 });
+      }
+      break;
   }
 }
 
-async function decrementLeaveCount(leaveRecords) {
-  const users = await Users.findByPk(leaveRecords.UserId);
-  if (leaveRecords.leaveType === "Medical Leave") {
-    if (users.MedicalLeave === 0) {
-      return res.status(400).json({
-        message: "Do not have medical leave",
-        success: false,
-      });
-    } else {
-      await users.decrement("MedicalLeave", { by: 1 });
-    }
-  }
-  if (leaveRecords.leaveType === "Annual Leave") {
-    const leaveDays = calculateLeaveDays(leaveRecords.from, leaveRecords.to);
+async function decrementLeaveCount(leaveRecords, res) {
+  const user = await Users.findByPk(leaveRecords.UserId);
+  const leaveDays = calculateLeaveDays(leaveRecords.from, leaveRecords.to);
 
-    // 3ရက်  ကြိုပြီး leave တင်ရ မယ်
-    if (!isAfterThreeDays(leaveRecords.from)) {
-      return res.status(400).json({
-        message:
-          "Cannot apply annual leave, start date must be at least 3 days in the future",
-        success: false,
-      });
-    }
+  switch (leaveRecords.leaveType) {
+    case "Medical Leave":
+      if (user.MedicalLeave === 0) {
+        return res.status(400).json({
+          message: "Do not have medical leave",
+          success: false,
+        });
+      }
+      await user.decrement("MedicalLeave", { by: leaveDays });
+      break;
 
-    if (leaveDays > users.AnnualLeave) {
-      return res.status(400).json({
-        message: "Insufficient annual leave balance",
-        success: false,
-      });
-    }
+    case "Annual Leave":
+      if (!isAfterThreeDays(leaveRecords.from)) {
+        return res.status(400).json({
+          message:
+            "Cannot apply annual leave, start date must be at least 3 days in the future",
+          success: false,
+        });
+      }
+      if (leaveDays > user.AnnualLeave) {
+        return res.status(400).json({
+          message: "Insufficient annual leave balance",
+          success: false,
+        });
+      }
+      await user.decrement("AnnualLeave", { by: leaveDays });
+      break;
 
-    await users.decrement("AnnualLeave", { by: leaveDays });
-  }
-
-  if (leaveRecords.leaveType === "Morning Leave") {
-    if (users.MedicalLeave === 0) {
-      return res.status(400).json({
-        message: "Do not have medical leave",
-        success: false,
-      });
-    } else {
-      await users.decrement("MedicalLeave", { by: 0.5 });
-    }
-  }
-  if (leaveRecords.leaveType === "Evening Leave") {
-    if (users.MedicalLeave === 0) {
-      return res.status(400).json({
-        message: "Do not have medical leave",
-        success: false,
-      });
-    } else {
-      await users.decrement("MedicalLeave", { by: 0.5 });
-    }
+    case "Morning Leave":
+    case "Evening Leave":
+      if (user.MedicalLeave === 0) {
+        return res.status(400).json({
+          message: "Do not have medical leave",
+          success: false,
+        });
+      }
+      await user.decrement("MedicalLeave", { by: 0.5 });
+      break;
   }
 }
 

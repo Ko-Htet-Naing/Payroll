@@ -69,6 +69,27 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *        schema:
  *          type: string
  *          format: date
+ *     StatusQueryParam:
+ *        name: status
+ *        in: query
+ *        description: The staus to search for
+ *        required: false
+ *        schema:
+ *          type: string
+ *     DepartmentQueryParam:
+ *        name: department
+ *        in: query
+ *        description: The department name to search for
+ *        required: false
+ *        schema:
+ *          type: string
+ *     LeaveTypeQueryParam:
+ *        name: leaveType
+ *        in: query
+ *        description: The leave type to search for
+ *        required: false
+ *        schema:
+ *          type: string
  *
  * /api/v1/leaveRecord:
  *   get:
@@ -80,6 +101,9 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *       - $ref: '#/components/parameters/UsernameQueryParam'
  *       - $ref: '#/components/parameters/FromDateQueryParam'
  *       - $ref: '#/components/parameters/ToDateQueryParam'
+ *       - $ref: '#/components/parameters/StatusQueryParam'
+ *       - $ref: '#/components/parameters/DepartmentQueryParam'
+ *       - $ref: '#/components/parameters/LeaveTypeQueryParam'
  *     responses:
  *       200:
  *         description: The list of leave record.
@@ -138,6 +162,9 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *       - $ref: '#/components/parameters/UsernameQueryParam'
  *       - $ref: '#/components/parameters/FromDateQueryParam'
  *       - $ref: '#/components/parameters/ToDateQueryParam'
+ *       - $ref: '#/components/parameters/StatusQueryParam'
+ *       - $ref: '#/components/parameters/DepartmentQueryParam'
+ *       - $ref: '#/components/parameters/LeaveTypeQueryParam'
  *     responses:
  *       200:
  *         description: The leave response by userId

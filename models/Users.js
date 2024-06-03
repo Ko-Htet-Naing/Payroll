@@ -85,6 +85,7 @@ module.exports = (sequelize, DataType) => {
     EmployeeId: {
       type: DataType.STRING,
       allowNull: false,
+      unique: true,
     },
     Payroll: {
       type: DataType.INTEGER,
@@ -125,6 +126,7 @@ module.exports = (sequelize, DataType) => {
     NRC: {
       type: DataType.STRING,
       allowNull: false,
+      unique: true,
     },
     refreshToken: {
       type: DataType.STRING,

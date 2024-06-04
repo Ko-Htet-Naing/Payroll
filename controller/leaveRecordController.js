@@ -92,7 +92,8 @@ const getLeaveList = async (req, res) => {
 
 const getByUserId = async (req, res) => {
   const userId = req.params.UserId;
-  const { page, size, from, to, status, leaveType } = parseQueryParams(req);
+  const { page, size, from, to, status, leaveType, department } =
+    parseQueryParams(req);
 
   try {
     const totalCount = await LeaveRecordHelper.getTotalLeaveCountByUserId(

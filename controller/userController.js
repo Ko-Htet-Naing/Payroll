@@ -1,4 +1,4 @@
-const { Users, Department } = require("../models");
+const { Users, Department, Payroll } = require("../models");
 
 const { hashPassword, comparePassword } = require("../helpers/Hash");
 const { Op } = require("sequelize");
@@ -7,7 +7,9 @@ require("dotenv").config();
 
 // Hook to synchronize user after user are inserted
 Users.addHook("afterCreate", async (user, options) => {
+  await Payroll.create({ UserId: user.id });
   const departmentId = user.DepartmentId;
+
   if (departmentId) {
     const userCount = await Users.count({
       where: { DepartmentId: departmentId },

@@ -1,16 +1,6 @@
-const { Attendance, Users } = require("../models");
-
+const { getUsernameFromDB } = require("../helpers/DBHelper.js");
 const getAllAttendance = async (req, res) => {
-  const data = await Attendance.findAll({
-    include: [
-      {
-        model: Users,
-        attributes: ["username", "Email", "Department"],
-      },
-    ],
-    attributes: ["inTime", "outTime", "date"],
-  });
-  console.log(data);
+  console.log(await getUsernameFromDB(11));
 };
-
+getAllAttendance();
 module.exports = getAllAttendance;

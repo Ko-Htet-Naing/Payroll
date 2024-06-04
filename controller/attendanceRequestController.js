@@ -1,8 +1,7 @@
 const { Attendance_Record, Department, Users } = require("../models");
 const { Op } = require("sequelize");
 const UserHelper = require("../helpers/DBHelper");
-const { message, getMessaging } = require("../config/firebaseConfig");
-const { Fcm_Tokens } = require("../models");
+const { SendNoti } = require("../helpers/SendNoti");
 
 // create attendance request
 const createAttendanceRequest = async (req, res) => {
@@ -23,7 +22,6 @@ const createAttendanceRequest = async (req, res) => {
 
 // Admin မှ Confirmed(true or false) လုပ်ထားသော request များ
 const confirmRequest = async (req, res) => {
-  console.log("Working Confirm Request function");
   const { reason, date, UserId, adminApproved } = req.body;
   if (!reason || !date || !UserId)
     return res.status(400).send("Credential Missing");
@@ -36,28 +34,11 @@ const confirmRequest = async (req, res) => {
   if (await UserHelper.checkUserInAttendanceDB(UserId)) {
     // API မှ adminApproved ကို ture လို့ထားပြီး request လုပ်လာပါက...
     if (!attendaceRequest.adminApproved) {
-      const tokenData = await Fcm_Tokens.findOne({
-        where: { UserId: UserId },
-        attributes: ["token"],
-      });
-      let notificationMessage = {
-        ...message,
-        notification: {
-          ...message.notification,
-          title: "Notification",
-          body: "ကိုယ်ပေးသော်လည်း ပေးတိုင်းပြန်မရတာ အချစ်လို့ခေါ်သလား????",
-        },
-        token: tokenData.dataValues.token,
-      };
-      getMessaging()
-        .send(notificationMessage)
-        .then((response) => {
-          // res.status(200).send("Successfully sent message");
-          console.log("Successfully sent message ", response);
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      await SendNoti(
+        "Reject Case Noti",
+        "  We regret to inform you that your request has been denied by the admin due to various reasons.",
+        UserId
+      );
       return res
         .status(400)
         .send(
@@ -82,6 +63,8 @@ const confirmRequest = async (req, res) => {
     if (result.success) {
       // attendance request table တွင် ရလဒ်ပေါ်မူတည်ပြီး Approved Rejected ပြင်ရန်
       await UserHelper.updateUserStatusInDB(UserId, date);
+      // အောင်မြင်ကြောင်း notification
+
       res
         .status(200)
         .json({ message: result.message, success: result.success });

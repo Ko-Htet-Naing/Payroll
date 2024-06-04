@@ -21,6 +21,23 @@ class UserHelper {
     }
   }
 
+  // static Get Username from database
+  static async getUsernameFromDB(userId) {
+    try {
+      const user = await Users.findOne({
+        where: {
+          id: userId,
+        },
+        attributes: ["Username"],
+        raw: true,
+      });
+      // To handle Possible Error
+      return user?.Username ?? "Visited User";
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
   // Check User Exists in Attendance Table
   static async checkUserInAttendanceDB(userId) {
     try {

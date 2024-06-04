@@ -135,6 +135,7 @@ module.exports = (sequelize, DataType) => {
     Users.hasMany(models.LeaveRecord, { foreignKey: "UserId" });
     Users.belongsTo(models.Department, { foreignKey: "DepartmentId" });
     Users.hasMany(models.Attendance_Record, { foreignKey: "UserId" });
+    Users.hasOne(models.Fcm_Tokens, { foreignKey: "UserId" });
   };
 
   return Users;

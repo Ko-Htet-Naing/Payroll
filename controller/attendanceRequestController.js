@@ -1,8 +1,8 @@
 const { Attendance_Record, Department, Users } = require("../models");
 const { Op } = require("sequelize");
 const UserHelper = require("../helpers/DBHelper");
-const { admin, message, getMessaging } = require("../config/firebaseConfig");
-const { response } = require("express");
+const { message, getMessaging } = require("../config/firebaseConfig");
+const { Fcm_Tokens } = require("../models");
 
 // create attendance request
 const createAttendanceRequest = async (req, res) => {
@@ -36,24 +36,28 @@ const confirmRequest = async (req, res) => {
   if (await UserHelper.checkUserInAttendanceDB(UserId)) {
     // API မှ adminApproved ကို ture လို့ထားပြီး request လုပ်လာပါက...
     if (!attendaceRequest.adminApproved) {
+      const tokenData = await Fcm_Tokens.findOne({
+        where: { UserId: UserId },
+        attributes: ["token"],
+      });
       let notificationMessage = {
         ...message,
         notification: {
           ...message.notification,
           title: "Notification",
-          body: "This is test for notification",
+          body: "ကိုယ်ပေးသော်လည်း ပေးတိုင်းပြန်မရတာ အချစ်လို့ခေါ်သလား????",
         },
+        token: tokenData.dataValues.token,
       };
       getMessaging()
         .send(notificationMessage)
         .then((response) => {
-          res.status(200).send("Successfully sent message");
+          // res.status(200).send("Successfully sent message");
           console.log("Successfully sent message ", response);
         })
         .catch((error) => {
           console.log(error);
         });
-      console.log(notificationMessage);
       return res
         .status(400)
         .send(

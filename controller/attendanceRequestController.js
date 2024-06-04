@@ -1,6 +1,8 @@
 const { Attendance_Record, Department, Users } = require("../models");
 const { Op } = require("sequelize");
 const UserHelper = require("../helpers/DBHelper");
+const { admin, message, getMessaging } = require("../config/firebaseConfig");
+const { response } = require("express");
 
 // create attendance request
 const createAttendanceRequest = async (req, res) => {
@@ -33,12 +35,31 @@ const confirmRequest = async (req, res) => {
   };
   if (await UserHelper.checkUserInAttendanceDB(UserId)) {
     // API မှ adminApproved ကို ture လို့ထားပြီး request လုပ်လာပါက...
-    if (!attendaceRequest.adminApproved)
+    if (!attendaceRequest.adminApproved) {
+      let notificationMessage = {
+        ...message,
+        notification: {
+          ...message.notification,
+          title: "Notification",
+          body: "This is test for notification",
+        },
+      };
+      getMessaging()
+        .send(notificationMessage)
+        .then((response) => {
+          res.status(200).send("Successfully sent message");
+          console.log("Successfully sent message ", response);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+      console.log(notificationMessage);
       return res
         .status(400)
         .send(
           "မင်းမှာ count ရှိသေးပေမဲ့ admin မှ အကြောင်းကြောင်းကြောင့် ပယ်ချလိုက်ပါတယ်."
         );
+    }
 
     if (!(await UserHelper.checkUserAlreadyApproved(UserId, date)))
       return res.status(400).json({

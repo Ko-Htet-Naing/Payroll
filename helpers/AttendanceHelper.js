@@ -58,7 +58,20 @@ async function getAttendanceList({
       offset: page * size,
     });
 
-    return attendanceList;
+    const result = attendanceList.map((attendance) => ({
+      id: attendance.id,
+      in_time: attendance.in_time,
+      out_time: attendance.out_time,
+      date: attendance.date,
+      lateInTime: attendance.late_in_time,
+      earlyOutTime: attendance.early_out_time,
+      userId: attendance.UserId,
+      username: attendance.User.username,
+      employeeId: attendance.User.EmployeeId,
+      position: attendance.User.Position,
+      departmentName: attendance.User.Department.deptName,
+    }));
+    return result;
   } catch (error) {
     console.error("Error fetching attendancce records:", error);
     throw error;

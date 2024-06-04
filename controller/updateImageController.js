@@ -18,7 +18,7 @@ const getUpdatedImage = async (req, res) => {
     where: { id: id },
     attributes: ["ProfileImage"],
   });
-  if (!image.ProfileImage) return res.sendStatus(404);
+  if (!image?.ProfileImage) return res.sendStatus(404);
   return res.status(202).send(image.ProfileImage);
 };
 

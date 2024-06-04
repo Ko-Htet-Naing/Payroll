@@ -15,7 +15,7 @@ const verifyJWT = require("./middleware/verifyJWT");
 const attendance = require("./routes/api/attendance");
 const leaveRecord = require("./routes/api/leaveRecords");
 const attendanceRequest = require("./routes/api/attendanceRequest");
-const payrollthisMonth = require("./routes/api/payroll");
+const payroll = require("./routes/api/payroll");
 const holidays = require("./routes/api/holidays");
 const profileImage = require("./routes/api/profileImage");
 const swaggerDocs = require("./utils/swagger");
@@ -45,7 +45,7 @@ app.use("/api/v1/attendance", attendance);
 app.use("/api/v1/leaveRecord", leaveRecord);
 app.use("/api/v1/attendanceRequest", attendanceRequest);
 app.use("/api/v1/userCount", userCount);
-//app.use("/api/v1/attendanceList", payrollthisMonth);
+app.use("/api/v1/payroll", payroll);
 app.use("/api/v1/holidays", holidays);
 // send FCM Token to backend from mobile api
 app.use("/api/v1/fcm", fcm);

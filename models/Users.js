@@ -87,7 +87,7 @@ module.exports = (sequelize, DataType) => {
       allowNull: false,
       unique: true,
     },
-    Payroll: {
+    Salary: {
       type: DataType.INTEGER,
       allowNull: true,
     },
@@ -136,6 +136,7 @@ module.exports = (sequelize, DataType) => {
     Users.belongsTo(models.Department, { foreignKey: "DepartmentId" });
     Users.hasMany(models.Attendance_Record, { foreignKey: "UserId" });
     Users.hasOne(models.Fcm_Tokens, { foreignKey: "UserId" });
+    Users.hasMany(models.Payroll, { foreignKey: "UserId" });
   };
 
   return Users;

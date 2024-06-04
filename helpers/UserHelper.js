@@ -2,14 +2,19 @@ const { Users, Attendance, Holidays, LeaveRecord } = require("../models");
 const { Op } = require("sequelize");
 class UserHelper {
   // တရက်စာရဲ့ payroll ကို တွက်
-  static async salaryPerDay(users, totalDays) {
-    const monthlySalary = users.Salary;
-    console.log("monthlySalary", monthlySalary);
-
-    const payrollRate = monthlySalary / totalDays;
+  static async salaryPerDay(salary, totalDays) {
+    const payrollRate = salary / totalDays;
     return payrollRate;
   }
 
+  static async totalDays(startDate, endDate) {
+    let Difference_In_Time = endDate.getTime() - startDate.getTime();
+
+    // Calculating the no. of days between two dates
+    let totalDays = Math.round(Difference_In_Time / (1000 * 3600 * 24)) + 1;
+
+    return totalDays;
+  }
   // တလစာ weekend ရဲ့ list
   static getWeekends(startDate, endDate) {
     let currentDate = new Date(startDate);
@@ -24,15 +29,14 @@ class UserHelper {
       }
       currentDate.setDate(currentDate.getDate() + 1);
     }
-
-    console.log("count", count);
-    console.log("weekend", weekends);
-    return weekends;
+    return { count, weekends };
   }
 
   // user တယောက်ရဲ့ attendance record
   static async attendanceRecord(userId, startDate, endDate, totalDays, users) {
     const today = new Date();
+    const salary = users.Salary;
+    console.log("salary", salary);
 
     const currentDate = today.toISOString().slice(0, 10);
     console.log(today);
@@ -64,11 +68,13 @@ class UserHelper {
 
     let userAttendanceList = [];
 
-    const payrollRate = await this.salaryPerDay(users, totalDays);
+    const payrollRate = await this.salaryPerDay(salary, totalDays);
 
     leaveRecords.map((leaveRecord) => {
       const startDate = new Date(leaveRecord.from);
       const endDate = new Date(leaveRecord.to);
+      console.log("start date", startDate);
+      console.log("end date", endDate);
 
       // စတင်ရက်နဲ့ အဆုံးရက်ကြားမှာ ရှိတဲ့ ရက်စွဲတွေကို ထုတ်ယူမယ်။
       for (
@@ -102,7 +108,8 @@ class UserHelper {
       }
     });
 
-    this.getWeekends(startDate, endDate).map((weekend) => {
+    const weekendsInfo = this.getWeekends(startDate, endDate);
+    weekendsInfo.weekends.map((weekend) => {
       if (weekend <= currentDate) {
         const holiday = {
           date: weekend,
@@ -152,6 +159,7 @@ class UserHelper {
 
     return data.sort((a, b) => a.date.localeCompare(b.date)); // Sort the data by date
   }
+
   static async userListById(userId, startDate, endDate, totalDays, res) {
     const users = await Users.findByPk(userId);
 

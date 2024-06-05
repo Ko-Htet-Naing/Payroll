@@ -64,7 +64,11 @@ const confirmRequest = async (req, res) => {
       // attendance request table တွင် ရလဒ်ပေါ်မူတည်ပြီး Approved Rejected ပြင်ရန်
       await UserHelper.updateUserStatusInDB(UserId, date);
       // အောင်မြင်ကြောင်း notification
-
+      await SendNoti(
+        "Approved Case Noti",
+        "  We would like to inform you that your request has been accepted by the admin.",
+        UserId
+      );
       res
         .status(200)
         .json({ message: result.message, success: result.success });

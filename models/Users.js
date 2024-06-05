@@ -82,6 +82,10 @@ module.exports = (sequelize, DataType) => {
       type: DataType.STRING,
       allowNull: false,
     },
+    CurrentAccessToken: {
+      type: DataType.STRING,
+      allowNull: true,
+    },
     EmployeeId: {
       type: DataType.STRING,
       allowNull: false,

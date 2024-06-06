@@ -1,4 +1,5 @@
 const { Users } = require("../models");
+const { Fcm_Tokens } = require("../models");
 
 const logout = async (req, res) => {
   const { id } = req.params;
@@ -13,17 +14,13 @@ const logout = async (req, res) => {
   const isLogin = loginUser?.refreshToken ? true : false;
   if (!isLogin)
     return res.status(404).send({ message: "You already logged out!" });
-  console.log(loginUser?.currentAccessToken);
   try {
     await Users.update(
-      { currentAccessToken: null, refreshToken: null },
+      { CurrentAccessToken: null, refreshToken: null },
       { where: { EmployeeId: loginUser?.EmployeeId } }
     );
-    await Users.update(
-      { currentAccessToken: null },
-      { where: { EmployeeId: loginUser?.EmployeeId } }
-    );
-    res.status(200).send({ message: "Successfully Logout!" });
+    await Fcm_Tokens.update({ token: null }, { where: { UserId: id } });
+    return res.status(200).send({ message: "Successfully Logout!" });
   } catch (error) {
     throw new Error(error);
   }

@@ -35,7 +35,7 @@ const login = async (req, res) => {
 
   // Update Refresh Token Data
   await Users.update(
-    { currentAccessToken: accessToken, refreshToken: refreshTokenToStore },
+    { CurrentAccessToken: accessToken, refreshToken: refreshTokenToStore },
     { where: { EmployeeId: dbEmployeeId } }
   );
 

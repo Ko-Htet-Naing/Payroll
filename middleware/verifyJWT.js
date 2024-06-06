@@ -24,15 +24,13 @@ const auth = async (req, res, next) => {
           where: {
             EmployeeId: empId,
           },
-          attributes: ["currentAccessToken"],
+          attributes: ["CurrentAccessToken"],
           raw: true,
         });
-        if (!user?.currentAccessToken || user?.currentAccessToken !== token) {
-          res.status(403).send("Invalid token for this user");
+        const dbToken = user?.CurrentAccessToken;
+        if (!dbToken || dbToken !== token) {
+          return res.status(403).send("Invalid token for this user");
         }
-
-        req.user = username;
-        req.role = role;
         next();
       }
     );

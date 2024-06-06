@@ -21,7 +21,8 @@ const SendNoti = async (title, message, UserId) => {
     },
     token: userDeviceToken,
   };
-  console.log("Token is ", notificationMessage);
+  // If user fcm token not found
+  if (userDeviceToken === 0) return false;
   getMessaging()
     .send(notificationMessage)
     .then((response) => {

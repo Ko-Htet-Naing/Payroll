@@ -18,7 +18,6 @@ const login = async (req, res) => {
     return res.status(401).send({ message: "Wrong Password" });
   const dbEmployeeId = user.EmployeeId;
   const role = user.Role;
-
   // Token Creation
   const accessToken = jwt.sign(
     { UserInfo: { empId: dbEmployeeId, role: role } },

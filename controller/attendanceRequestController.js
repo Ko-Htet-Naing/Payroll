@@ -24,7 +24,7 @@ const createAttendanceRequest = async (req, res) => {
 const confirmRequest = async (req, res) => {
   const { reason, date, UserId, adminApproved } = req.body;
   if (!reason || !date || !UserId)
-    return res.status(400).send("Credential Missing");
+    return res.status(404).send("Credential Missing");
   const attendaceRequest = {
     reason: reason || "in_time_late", // "out_time_late"
     date: date || "2024-5-13",
@@ -34,20 +34,23 @@ const confirmRequest = async (req, res) => {
   if (await UserHelper.checkUserInAttendanceDB(UserId)) {
     // API မှ adminApproved ကို ture လို့ထားပြီး request လုပ်လာပါက...
     if (!attendaceRequest.adminApproved) {
-      await SendNoti(
+      const isTokenExists = await SendNoti(
         "Reject Case Noti",
-        "  We regret to inform you that your request has been denied by the admin due to various reasons.",
+        "We regret to inform you that your request has been denied by the admin due to various reasons.",
         UserId
       );
-      return res
-        .status(400)
-        .send(
-          "မင်းမှာ count ရှိသေးပေမဲ့ admin မှ အကြောင်းကြောင်းကြောင့် ပယ်ချလိုက်ပါတယ်."
-        );
+      if (!isTokenExists) {
+        return res
+          .status(404)
+          .send(
+            "မင်းမှာ count ရှိသေးပေမဲ့ admin မှ အကြောင်းကြောင်းကြောင့် ပယ်ချလိုက်ပါတယ်."
+          );
+      } else {
+      }
     }
 
     if (!(await UserHelper.checkUserAlreadyApproved(UserId, date)))
-      return res.status(400).json({
+      return res.status(404).json({
         message: "adminApproved :Admin မှ Approved လုပ်ပေးပြီးသားမို့လို့ပါ",
         success: false,
       });

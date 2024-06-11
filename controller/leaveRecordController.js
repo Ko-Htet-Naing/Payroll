@@ -14,8 +14,7 @@ const parseQueryParams = (req) => ({
 });
 
 const createLeave = async (req, res) => {
-  const { reasons, leaveType, from, to, UserId } = req.body;
-  const attachmentUrl = req.file ? req.file.url : null;
+  const { reasons, leaveType, from, to, UserId, attachmentUrl } = req.body;
 
   const leaveRecords = {
     reasons: reasons || "illness",
@@ -23,7 +22,7 @@ const createLeave = async (req, res) => {
     from: from || "2024-5-10",
     to: to || "2024-5-10",
     UserId: UserId || 1,
-    attachmentUrl: "file from url" || null,
+    attachmentUrl: attachmentUrl || "File From URL",
   };
 
   try {

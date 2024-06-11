@@ -42,7 +42,7 @@ const deleteStaff = async (req, res) => {
   const user = await Users.findByPk(id);
   if (!user) return res.status(404).send("User not found");
   await user.destroy();
-  res.status(200).send("Delete Successfully!");
+  res.status(200).json({ message: "Delete Successfully!" });
 };
 
 // Staff creating
@@ -114,7 +114,7 @@ const createStaff = async (req, res) => {
   try {
     // Create the user with the user data
     await Users.create(userData);
-    res.status(201).json("Created User Successfully");
+    res.status(201).json({ message: "Created User Successfully" });
   } catch (error) {
     if (error.name === "SequelizeUniqueConstraintError") {
       res.status(400).json({ message: "Employee ID or NRC already exists." });
@@ -200,6 +200,6 @@ const updateUserData = async (req, res) => {
     Address: address,
   });
   if (!updateUserData) return res.status(404).json("user not updated");
-  res.status(200).json("Updated successfully");
+  res.status(200).json({ message: "Updated successfully" });
 };
 module.exports = { createStaff, deleteStaff, getUserList, updateUserData };

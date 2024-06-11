@@ -11,7 +11,7 @@ const handleRefreshToken = async (req, res) => {
   const foundUser = await Users.findOne({
     where: { refreshToken: refreshToken },
   });
-  if (!foundUser) return res.status(404).send("User not found");
+  if (!foundUser) return res.status(404).json({ message: "User not found" });
   jwt.verify(
     refreshToken,
     process.env.REFRESH_TOKEN_SECRET,

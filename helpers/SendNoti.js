@@ -3,13 +3,16 @@ const { getMessaging } = require("../config/firebaseConfig");
 const DBHelper = require("../helpers/DBHelper");
 const { redisClient, notificationQueue } = require("../config/bullConfig");
 
-const SendNoti = async (title, message, UserId) => {
-  const tokenData = await Fcm_Tokens.findOne({
-    where: { UserId: UserId },
+const isValidToken = async (userId) => {
+  return await Fcm_Tokens.findOne({
+    where: { UserId: userId },
     attributes: ["token"],
     raw: true,
   });
+};
 
+const SendNoti = async (title, message, UserId) => {
+  const tokenData = await isValidToken(UserId);
   // Added this line for the safety purpose
   const userDeviceToken = tokenData?.token;
 
@@ -39,4 +42,4 @@ const SendNoti = async (title, message, UserId) => {
     console.log("Notification queue for later delivery");
   }
 };
-module.exports = { SendNoti };
+module.exports = { SendNoti, isValidToken };

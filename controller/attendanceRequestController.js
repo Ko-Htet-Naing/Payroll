@@ -1,13 +1,13 @@
 const { Attendance_Record, Department, Users } = require("../models");
 const { Op } = require("sequelize");
 const UserHelper = require("../helpers/DBHelper");
-const { SendNoti } = require("../helpers/SendNoti");
+const { SendNoti, isValidToken } = require("../helpers/SendNoti");
 
 // create attendance request
 const createAttendanceRequest = async (req, res) => {
   const { reason, date, UserId } = req.body;
   if (!reason || !date || !UserId)
-    return res.status(404).send("Credential Missing!");
+    return res.status(404).json({ message: "Credential Missing!" });
   const attendaceRequest = {
     reason: reason || "in_time_late", // "out_time_late"
     date: date || "2024-5-13",
@@ -15,73 +15,62 @@ const createAttendanceRequest = async (req, res) => {
   };
   // DB တွင် pending state သုံးပြီး record တကြောင်းတိုးပေးရန်
   const result = await UserHelper.createNewAttendanceRequest(attendaceRequest);
-  result
-    ? res.status(200).send("Successfully Requested To HR")
-    : res.status(400).send("Already Requested To HR");
+  result?.isSuccess
+    ? res.status(200).json({ message: result.message })
+    : res.status(400).json({ message: result.message });
 };
 
 // Admin မှ Confirmed(true or false) လုပ်ထားသော request များ
 const confirmRequest = async (req, res) => {
-  const { reason, date, UserId, adminApproved } = req.body;
-  if (!reason || !date || !UserId)
-    return res.status(404).send("Credential Missing");
-  const attendaceRequest = {
-    reason: reason || "in_time_late", // "out_time_late"
-    date: date || "2024-5-13",
-    UserId: UserId || 3,
-    adminApproved: adminApproved || false,
-  };
-  if (await UserHelper.checkUserInAttendanceDB(UserId)) {
-    // API မှ adminApproved ကို ture လို့ထားပြီး request လုပ်လာပါက...
-    if (!attendaceRequest.adminApproved) {
-      const isTokenExists = await SendNoti(
-        "Reject Case Noti",
-        "We regret to inform you that your request has been denied by the admin due to various reasons.",
-        UserId
-      );
-      if (!isTokenExists) {
-        return res
-          .status(404)
-          .send(
-            "မင်းမှာ count ရှိသေးပေမဲ့ admin မှ အကြောင်းကြောင်းကြောင့် ပယ်ချလိုက်ပါတယ်."
-          );
-      } else {
-      }
-    }
-
-    if (!(await UserHelper.checkUserAlreadyApproved(UserId, date)))
-      return res.status(404).json({
-        message: "adminApproved :Admin မှ Approved လုပ်ပေးပြီးသားမို့လို့ပါ",
-        success: false,
-      });
-
-    if (!(await UserHelper.findUserAttendanceLeaveCount(UserId)))
-      return res.status(401).json({
-        message: "You don't have any leave count",
-        success: false,
-      });
-
-    // User ရဲ့ AM PM ပေါ်မူတည်ပြီး time ကို ပြုပြင်ခြင်း
-    const result = await UserHelper.findAndReplace(UserId, reason, date);
-    if (result.success) {
-      // attendance request table တွင် ရလဒ်ပေါ်မူတည်ပြီး Approved Rejected ပြင်ရန်
-      await UserHelper.updateUserStatusInDB(UserId, date);
-      // အောင်မြင်ကြောင်း notification
-      await SendNoti(
-        "Approved Case Noti",
-        "  We would like to inform you that your request has been accepted by the admin.",
-        UserId
-      );
-      res
-        .status(200)
-        .json({ message: result.message, success: result.success });
-    } else if (result.success === false) {
-      res.status(200).send({
-        message: result.message,
-        success: result.success,
-      });
-    }
+  const { id, adminApproved } = req.body;
+  if (!id || adminApproved === undefined || adminApproved === null)
+    return res.status(404).json({ message: "UserId or adminApproved Missing" });
+  const userData = await UserHelper.getUserData(id);
+  if (!userData) {
+    return res.status(404).json({ message: "User not found" });
   }
+  const { date, reason } = userData;
+  if (!adminApproved) {
+    // User request အား Reject လုပ်တဲ့ case
+  } else {
+    // User Request အား Approve လုပ်တဲ့ Case
+    const approvedResult = await UserHelper.checkUserAlreadyApproved(id);
+    if (!approvedResult.isSuccess) {
+      const statusCode = approvedResult.isSuccess ? 200 : 400;
+      return res.status(statusCode).json({
+        isSuccess: approvedResult.isSuccess,
+        message: approvedResult.message,
+      });
+    }
+
+    const result = await UserHelper.rejectUserRequest(id);
+    console.log(result);
+  }
+
+  // if (!(await UserHelper.findUserAttendanceLeaveCount(UserId)))
+  //   return res.status(401).json({
+  //     message: "You don't have any leave count",
+  //     success: false,
+  //   });
+
+  // User ရဲ့ AM PM ပေါ်မူတည်ပြီး time ကို ပြုပြင်ခြင်း
+  // const result = await UserHelper.findAndReplace(UserId, reason, date);
+  // if (result.success) {
+  //   // attendance request table တွင် ရလဒ်ပေါ်မူတည်ပြီး Approved Rejected ပြင်ရန်
+  //   await UserHelper.updateUserStatusInDB(UserId, date);
+  //   // အောင်မြင်ကြောင်း notification
+  //   await SendNoti(
+  //     "Approved Case Noti",
+  //     "  We would like to inform you that your request has been accepted by the admin.",
+  //     UserId
+  //   );
+  //   res.status(200).json({ message: result.message, success: result.success });
+  // } else if (result.success === false) {
+  //   res.status(200).send({
+  //     message: result.message,
+  //     success: result.success,
+  //   });
+  // }
 };
 
 // get all attendance request

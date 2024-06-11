@@ -8,12 +8,13 @@ const updateImage = async (req, res) => {
     { ProfileImage: imageUrl },
     { where: { id: id } }
   );
-  if (result[0] > 0) return res.status(200).send("Uploading Success");
-  else return res.status(400).send("Failed Uploading Photo");
+  if (result[0] > 0)
+    return res.status(200).json({ message: "Uploading Success" });
+  else return res.status(400).json({ message: "Failed Uploading Photo" });
 };
 const getUpdatedImage = async (req, res) => {
   const { id } = req.body;
-  if (!id) return res.status(400).send("Id Missing");
+  if (!id) return res.status(400).json({ message: "Id Missing" });
   const image = await Users.findOne({
     where: { id: id },
     attributes: ["ProfileImage"],

@@ -30,11 +30,6 @@ const realTimeClick = async (req, res) => {
   );
   // ပုံမှန် ရုံးဆင်းချိန်ကို သတ်မှတ်
   const eveningEndTime = moment(`${currentDate} 16:30`, "YYYY-MM-DD HH:mm:ss"); // Assuming 5 PM as the end of the evening period
-  // စောစောထွက် တာ နောက်ကျမှ ဝင်တာတွေကို သတ်မှတ်
-  const timeDifference = {
-    late: 0, // Default to 0, adjust based on conditions
-    early: 0, // Default to 0, adjust based on conditions
-  };
 
   let payload = {
     in_time: null,
@@ -44,8 +39,6 @@ const realTimeClick = async (req, res) => {
   };
   // User in / out time ပေါ်မူတည်ပြီး ဆွဲထုတ်ရန်
   let clickOption = null;
-  console.log("I am start of the code ");
-
   // Check In ကို process လုပ်ပေးရန်
   if (checkingStatus === "in") {
     clickOption = "in_time";
@@ -117,7 +110,6 @@ const realTimeClick = async (req, res) => {
       }
     }
   }
-
   if (checkingStatus === "out") {
     clickOption = "out_time";
     // 12ခွဲ နှင့် 12ခွဲ အောက် မှာ check out လာနှိပ်ရင်
@@ -204,12 +196,10 @@ const realTimeClick = async (req, res) => {
     }
   }
 
-  console.log(payload);
   const isUserAlradyCheck = await AttendanceClickHelper.getUserClick(
     userId,
     dateTime
   );
-  console.log(isUserAlradyCheck);
   if (isUserAlradyCheck) {
     if (clickOption === "in_time" && isUserAlradyCheck.in_time) {
       return res
@@ -223,7 +213,7 @@ const realTimeClick = async (req, res) => {
     }
   }
 
-  if (!isUserAlradyCheck?.in_time) {
+  if (!isUserAlradyCheck?.in_time && !isUserAlradyCheck?.out_time) {
     await Attendance.create({
       in_time: payload.in_time,
       out_time: payload.out_time,
@@ -233,12 +223,25 @@ const realTimeClick = async (req, res) => {
       date: dateTime,
     });
   }
-  console.log("Evening Out Time is : ", isUserAlradyCheck);
   if (isUserAlradyCheck?.out_time === null) {
     await Attendance.update(
       {
         out_time: payload.out_time,
         early_out_time: payload.early_out_time,
+      },
+      {
+        where: {
+          userId: userId,
+          date: dateTime,
+        },
+      }
+    );
+  }
+  if (isUserAlradyCheck?.in_time === null) {
+    await Attendance.update(
+      {
+        in_time: payload.in_time,
+        late_in_time: payload.late_in_time,
       },
       {
         where: {

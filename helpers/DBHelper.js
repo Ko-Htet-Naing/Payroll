@@ -1,5 +1,6 @@
+const { message } = require("../config/firebaseConfig");
 const { Users, Attendance, Attendance_Record } = require("../models");
-const { Op } = require("sequelize");
+const { Op, where } = require("sequelize");
 
 class UserHelper {
   /**
@@ -21,6 +22,15 @@ class UserHelper {
     }
   }
 
+  // change user request to rejected
+  static async rejectUserRequest(Id) {
+    const result = await Attendance_Record.update(
+      { status: "Approved" },
+      { where: { id: Id } }
+    );
+    return !!result;
+  }
+
   // static Get Username from database
   static async getUsernameFromDB(userId) {
     try {
@@ -37,14 +47,27 @@ class UserHelper {
       throw new Error(error);
     }
   }
-
   // Check User Exists in Attendance Table
-  static async checkUserInAttendanceDB(userId) {
+  // static async checkUserInAttendanceDB(userId) {
+  //   try {
+  //     const user = await Attendance.findOne({ where: { UserId: userId } });
+  //     return !!user; // return true if user exists, otherwise false
+  //   } catch (error) {
+  //     console.log("Error while finding attendance in database", error);
+  //     throw new Error("Attendance Database query failed");
+  //   }
+  // }
+
+  // Check User data in attendance database
+  static async getUserData(Id) {
     try {
-      const user = await Attendance.findOne({ where: { UserId: userId } });
-      return !!user; // return true if user exists, otherwise false
+      return await Attendance_Record.findOne({
+        where: { id: Id },
+        attributes: ["date", "reason"],
+        raw: true,
+      });
     } catch (error) {
-      console.log("Error while finding attendance in database", error);
+      console.log("Error while finding attendance in database", error.message);
       throw new Error("Attendance Database query failed");
     }
   }
@@ -217,30 +240,36 @@ class UserHelper {
   // Current user ဟာ Approved ဟုတ်မဟုတ်စစ်ဆေး
   // Approved ဆိုရင် true ပြန်
   // Pending ဆိုရင် false ပြန်
-  static async checkUserAlreadyApproved(userId, date) {
-    // Attendance Records ထဲမှာ Pending state နဲ့ Approved State တွေကို ရှာမယ်
+  static async checkUserAlreadyApproved(Id) {
     try {
       const result = await Attendance_Record.findOne({
         where: {
-          UserId: userId,
-          date: date,
-          status: { [Op.in]: ["Pending", "Approved"] },
+          id: Id,
         },
+        attributes: ["status"],
+        raw: true,
       });
-      if (result) {
-        if (result.status === "Approved") {
-          // Approved ဖြစ်ပြီးသားဆိုရင် false ဆိုတာ အလုပ်ပေးမလုပ်တဲ့ သဘော
-          // Approved ဖြစ်နေပြီးသားဆိုတာ User ကို အကြောင်းပြန်ပေးမယ်
-          return false;
-        } else if (result.status === "Pending") {
-          // Pending ဆိုမှ true ပြန်ပြီး အလုပ်ပေးလုပ်မယ်ဆိုတဲ့ သဘော
-          return true;
-        }
-      } else {
-        return "User Not exists in Attendance_Records Table";
+      if (!result) {
+        return {
+          isSuccess: false,
+          message: "User does not exist in Attendance_Records Table",
+        };
       }
+      if (result.status === "Approved") {
+        return {
+          isSuccess: false,
+          message: "HR already approved your request.",
+        };
+      } else if (result.status === "Rejected") {
+        return {
+          isSuccess: false,
+          message: "HR already rejected your request.",
+        };
+      }
+      return { isSuccess: true, message: "Your request are approved..." };
     } catch (error) {
       console.log("Error while fetching data from database", error);
+      throw new Error("Database query failed");
     }
   }
   // User ရဲ့ status (  Pending to Approved ) ကို database ထဲမှာ ပြုပြင်တဲ့ function
@@ -264,6 +293,9 @@ class UserHelper {
   }
 
   static async createNewAttendanceRequest(objects) {
+    const timeLateSector =
+      objects.reason === "in_time_late" ? "in_time" : "out_time";
+
     try {
       const existingRequest = await Attendance_Record.findOne({
         where: {
@@ -274,19 +306,41 @@ class UserHelper {
       });
       // တိုက်စစ်တုန်း ထပ်နေတဲ့ data ရှိမနေလို့ Null နှင့်စစ်ထားတာ..
       if (existingRequest === null) {
-        await Attendance_Record.create({
-          reason: objects.reason,
-          date: objects.date,
-          UserId: objects.UserId,
+        // လက်ရှိ date ရဲ့ in_time out_time null ဖြစ်မဖြစ် စစ်ဆေးခြင်း
+        const isValidRequest = await Attendance.findOne({
+          where: {
+            [Op.and]: [{ date: objects.date }, { UserId: objects.UserId }],
+          },
+          attributes: [timeLateSector],
+          raw: true,
         });
-        return true;
+        if (isValidRequest[timeLateSector] === null) {
+          // သူ request လုပ်တဲ့ အချိန်မှာ သူ့ရဲ့ in_time ဒါမှမဟုတ်
+          // out_time ဟာ null ဖြစ်နေမှ request ပေးတင်မယ်လို့စစ်တာ
+          await Attendance_Record.create({
+            reason: objects.reason,
+            date: objects.date,
+            UserId: objects.UserId,
+          });
+          return {
+            isSuccess: true,
+            message: "Successfully Requested To HR",
+          };
+        } else {
+          return {
+            isSuccess: false,
+            message: `You already click ${timeLateSector}. So, you cannot take request...`,
+          };
+        }
       } else {
-        return false;
+        return {
+          isSuccess: false,
+          message: `You already requested for this ${timeLateSector}`,
+        };
       }
     } catch (error) {
       console.log("Error while adding new user : ", error);
       throw new Error(error);
-      return [];
     }
   }
 }

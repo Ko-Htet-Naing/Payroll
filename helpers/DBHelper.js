@@ -1,6 +1,10 @@
-const { message } = require("../config/firebaseConfig");
-const { Users, Attendance, Attendance_Record } = require("../models");
-const { Op, where } = require("sequelize");
+const {
+  Users,
+  Attendance,
+  Attendance_Record,
+  Pending_Notification,
+} = require("../models");
+const { Op } = require("sequelize");
 
 class UserHelper {
   /**
@@ -10,6 +14,21 @@ class UserHelper {
    * @returns {Promise<boolean>} - Returns true if the user exists, otherwise false.
    * @throws {Error} - Throws an error if the database query fails.
    */
+
+  // save pending notification in database
+  static async sendPendingMessageInDB(userId, title, message) {
+    try {
+      const result = await Pending_Notification.create({
+        UserId: userId,
+        title: title,
+        message: message,
+      });
+      return result;
+    } catch (error) {
+      console.log("Error while adding pending notification to database");
+      throw new Error(error.message);
+    }
+  }
 
   // Check User Exist in database
   static async checkUserInDB(userId) {
@@ -23,9 +42,9 @@ class UserHelper {
   }
 
   // change user request to rejected
-  static async rejectUserRequest(Id) {
+  static async confirmRequest(Id, hrDecision) {
     const result = await Attendance_Record.update(
-      { status: "Approved" },
+      { status: hrDecision },
       { where: { id: Id } }
     );
     return !!result;
@@ -63,7 +82,7 @@ class UserHelper {
     try {
       return await Attendance_Record.findOne({
         where: { id: Id },
-        attributes: ["date", "reason"],
+        attributes: ["date", "reason", "UserId"],
         raw: true,
       });
     } catch (error) {
@@ -98,6 +117,7 @@ class UserHelper {
             const result = await Attendance.update(
               {
                 in_time: "8:30",
+                late_in_time: 0,
               },
               {
                 where: {
@@ -162,7 +182,7 @@ class UserHelper {
         if (isOutTimeNull?.out_time === null) {
           try {
             const result = await Attendance.update(
-              { out_time: "16:30" },
+              { out_time: "16:30", early_out_time: 0 },
               {
                 where: {
                   UserId: userId,
@@ -240,7 +260,7 @@ class UserHelper {
   // Current user ဟာ Approved ဟုတ်မဟုတ်စစ်ဆေး
   // Approved ဆိုရင် true ပြန်
   // Pending ဆိုရင် false ပြန်
-  static async checkUserAlreadyApproved(Id) {
+  static async checkUserAlreadyApproved(Id, hrDecision) {
     try {
       const result = await Attendance_Record.findOne({
         where: {
@@ -255,27 +275,22 @@ class UserHelper {
           message: "User does not exist in Attendance_Records Table",
         };
       }
-      if (result.status === "Approved") {
+      if (result.status === hrDecision) {
         return {
           isSuccess: false,
-          message: "HR already approved your request.",
-        };
-      } else if (result.status === "Rejected") {
-        return {
-          isSuccess: false,
-          message: "HR already rejected your request.",
+          message: `HR already ${hrDecision} your request.`,
         };
       }
-      return { isSuccess: true, message: "Your request are approved..." };
+      return { isSuccess: true, message: `Your request are ${hrDecision}...` };
     } catch (error) {
       console.log("Error while fetching data from database", error);
       throw new Error("Database query failed");
     }
   }
   // User ရဲ့ status (  Pending to Approved ) ကို database ထဲမှာ ပြုပြင်တဲ့ function
-  static async updateUserStatusInDB(UserId, date) {
+  static async updateUserStatusInDB(UserId, date, status) {
     await Attendance_Record.update(
-      { status: "Approved" },
+      { status: status },
       {
         where: {
           UserId: UserId,
@@ -294,7 +309,11 @@ class UserHelper {
 
   static async createNewAttendanceRequest(objects) {
     const timeLateSector =
-      objects.reason === "in_time_late" ? "in_time" : "out_time";
+      objects.reason === "in_time_late"
+        ? "in_time"
+        : objects.reason === "out_time_late"
+        ? "out_time"
+        : null;
 
     try {
       const existingRequest = await Attendance_Record.findOne({

@@ -41,7 +41,7 @@ require("./config/scheduler");
 app.use("/api/v1/mapCheck", authlocation);
 // middleware
 app.use("/api/v1/departments", department);
-app.use("/api/v1/attendance", attendance);
+
 app.use("/api/v1/leaveRecord", leaveRecord);
 app.use("/api/v1/attendanceRequest", attendanceRequest);
 app.use("/api/v1/userCount", userCount);
@@ -59,6 +59,7 @@ app.use("/api/v1/users", user);
 
 // Just for testing purpose
 app.use(verifyJWT);
+app.use("/api/v1/attendance", attendance);
 app.use("/api/v1/test", testRoute);
 
 // For handling unknown request

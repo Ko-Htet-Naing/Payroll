@@ -1,21 +1,20 @@
 const { Fcm_Tokens } = require("../models");
-const { getMessaging } = require("../config/firebaseConfig");
+const { admin } = require("../config/firebaseConfig");
 const DBHelper = require("../helpers/DBHelper");
-const { redisClient, notificationQueue } = require("../config/bullConfig");
 
+// Token valid ဖြစ်မဖြစ် စစ်ဆေးပေးတဲ့ function
 const isValidToken = async (userId) => {
-  return await Fcm_Tokens.findOne({
+  const result = await Fcm_Tokens.findOne({
     where: { UserId: userId },
     attributes: ["token"],
     raw: true,
   });
+  return result?.token;
 };
 
 const SendNoti = async (title, message, UserId) => {
-  const tokenData = await isValidToken(UserId);
   // Added this line for the safety purpose
-  const userDeviceToken = tokenData?.token;
-
+  const userDeviceToken = await isValidToken(UserId);
   // Composing sending noti
   let notificationMessage = {
     notification: {
@@ -26,10 +25,10 @@ const SendNoti = async (title, message, UserId) => {
     },
     token: userDeviceToken,
   };
-
   // Send noti only when user login else save in queue
   if (userDeviceToken !== null) {
-    getMessaging()
+    admin
+      .messaging()
       .send(notificationMessage)
       .then((response) => {
         console.log("Successfully sent message ", response);
@@ -38,8 +37,7 @@ const SendNoti = async (title, message, UserId) => {
         console.log(error);
       });
   } else {
-    await notificationQueue.add({ UserId, title, message });
-    console.log("Notification queue for later delivery");
+    console.log("Null case");
   }
 };
 module.exports = { SendNoti, isValidToken };

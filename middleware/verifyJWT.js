@@ -15,7 +15,7 @@ const auth = async (req, res, next) => {
       token,
       process.env.ACCESS_TOKEN_SECRET,
       async function (err, decoded) {
-        if (err) return res.status(403).send(err);
+        if (err) return res.status(401).send(err);
         const { empId } = decoded.UserInfo;
         const { role } = decoded.UserInfo;
 
@@ -29,7 +29,7 @@ const auth = async (req, res, next) => {
         });
         const dbToken = user?.CurrentAccessToken;
         if (!dbToken || dbToken !== token) {
-          return res.status(403).send("Invalid token for this user");
+          return res.status(401).send("Invalid token for this user");
         }
         next();
       }

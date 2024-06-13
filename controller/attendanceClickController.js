@@ -203,12 +203,12 @@ const realTimeClick = async (req, res) => {
   if (isUserAlradyCheck) {
     if (clickOption === "in_time" && isUserAlradyCheck.in_time) {
       return res
-        .status(401)
+        .status(403)
         .json({ message: "You have already checked in this morning." });
     }
     if (clickOption === "out_time" && isUserAlradyCheck.out_time) {
       return res
-        .status(401)
+        .status(403)
         .json({ message: "You have already checked out this evening." });
     }
   }

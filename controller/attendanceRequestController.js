@@ -44,11 +44,14 @@ const confirmRequest = async (req, res) => {
         message: rejectedResult.message,
         isSuccess: rejectedResult.isSuccess,
       });
-
+    await Users.increment("AttendanceLeave", {
+      by: 1,
+      where: { id: UserId },
+    });
     if (!(await isValidToken(UserId))) {
       await UserHelper.sendPendingMessageInDB(
         UserId,
-        `Dear ${await UserHelper.getUserName(UserId)} Rejected Case Noti`,
+        `Dear ${await UserHelper.getUsernameFromDB(UserId)} Rejected Case Noti`,
         "We would like to inform you that your request has been rejected by the admin."
       );
       return res.status(200).json({ message: "Notification Send" });

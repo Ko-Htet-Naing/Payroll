@@ -15,7 +15,7 @@ const ResetPassword = async (req, res) => {
     return res.status(404).json({ error: "User not found" });
   }
   if (!(await comparePassword(oldPassword, userData?.password))) {
-    return res.status(401).json({ error: "Password doesn't match" });
+    return res.status(403).json({ error: "Password doesn't match" });
   }
 
   const newHashPassword = await hashPassword(newPassword);

@@ -1,3 +1,4 @@
+const { isValid } = require("date-fns");
 const {
   Users,
   Attendance,
@@ -323,6 +324,7 @@ class UserHelper {
           UserId: objects.UserId,
         },
       });
+      console.log("Current Existing Request is : ", existingRequest);
       // တိုက်စစ်တုန်း ထပ်နေတဲ့ data ရှိမနေလို့ Null နှင့်စစ်ထားတာ..
       if (existingRequest === null) {
         // လက်ရှိ date ရဲ့ in_time out_time null ဖြစ်မဖြစ် စစ်ဆေးခြင်း
@@ -333,9 +335,34 @@ class UserHelper {
           attributes: [timeLateSector],
           raw: true,
         });
-        if (isValidRequest[timeLateSector] === null) {
+        console.log(
+          "Is valid request with timelateSector : ",
+          isValidRequest[timeLateSector]
+        );
+        console.log(
+          "Is valid request variable : ",
+          isValidRequest?.[timeLateSector] === null
+        );
+
+        if (isValidRequest?.[timeLateSector] === null) {
           // သူ request လုပ်တဲ့ အချိန်မှာ သူ့ရဲ့ in_time ဒါမှမဟုတ်
           // out_time ဟာ null ဖြစ်နေမှ request ပေးတင်မယ်လို့စစ်တာ
+          const { AttendanceLeave } = await Users.findOne({
+            attributes: ["AttendanceLeave"],
+            where: {
+              id: objects.UserId,
+            },
+          });
+          if (!parseInt(AttendanceLeave) > 0) {
+            return {
+              isSuccess: false,
+              message: "You don't have any attendance leave count",
+            };
+          }
+          await Users.decrement("AttendanceLeave", {
+            by: 1,
+            where: { id: objects.UserId },
+          });
           await Attendance_Record.create({
             reason: objects.reason,
             date: objects.date,

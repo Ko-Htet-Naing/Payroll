@@ -22,11 +22,11 @@ const login = async (req, res) => {
   const accessToken = jwt.sign(
     { UserInfo: { empId: dbEmployeeId, role: role } },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "3h" }
+    { expiresIn: "2m" }
   );
   const refreshTokenToStore = jwt.sign(
     {
-      UserInfo: { empId: dbEmployeeId },
+      UserInfo: { empId: dbEmployeeId, role: role },
     },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: "1d" }

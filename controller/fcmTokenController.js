@@ -25,7 +25,8 @@ async function fcmTokenControl(req, res) {
         await admin
           .messaging()
           .send(payload)
-          .then((response) => {
+          .then(async (response) => {
+            await Pending_Notification.destroy({ where: { id: id } });
             console.log("Successfully sent message ", response);
           });
         console.log("Notification sent");

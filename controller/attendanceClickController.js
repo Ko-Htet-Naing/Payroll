@@ -212,10 +212,10 @@ const realTimeClick = async (req, res) => {
   console.log(isUserAlradyCheck);
   if (isUserAlradyCheck) {
     if (clickOption === "in_time" && isUserAlradyCheck.in_time) {
-      return res.status(200).send("You have already checked in this morning.");
+      return res.status(401).send("You have already checked in this morning.");
     }
     if (clickOption === "out_time" && isUserAlradyCheck.out_time) {
-      return res.status(200).send("You have already checked out this evening.");
+      return res.status(401).send("You have already checked out this evening.");
     }
   }
 

@@ -1,46 +1,19 @@
 const { Users, Attendance, Holidays, LeaveRecord } = require("../models");
+const dateHelper = require("./dateHelper");
+const payRollHelper = require("../helpers/payRollHelper");
 const { Op } = require("sequelize");
 class UserHelper {
-  // တရက်စာရဲ့ payroll ကို တွက်
-  static async salaryPerDay(salary, totalDays) {
-    const payrollRate = salary / totalDays;
-    return payrollRate;
-  }
-
-  static async totalDays(startDate, endDate) {
-    let Difference_In_Time = endDate.getTime() - startDate.getTime();
-
-    // Calculating the no. of days between two dates
-    let totalDays = Math.round(Difference_In_Time / (1000 * 3600 * 24)) + 1;
-
-    return totalDays;
-  }
-  // တလစာ weekend ရဲ့ list
-  static getWeekends(startDate, endDate) {
-    let currentDate = new Date(startDate);
-    let weekends = [];
-    let count = 0;
-
-    while (currentDate <= endDate) {
-      // တနင်္ဂနွေနဲ့ စနေတို့ကို စစ်ဆေးမယ်။
-      if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-        weekends.push(currentDate.toISOString().slice(0, 10));
-        count++;
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-    return { count, weekends };
-  }
-
   // user တယောက်ရဲ့ attendance record
-  static async attendanceRecord(userId, startDate, endDate, totalDays, users) {
-    const today = new Date();
+  static async attendanceRecord(
+    userId,
+    startDate,
+    endDate,
+    totalDays,
+    users,
+    page = 0,
+    size = 10
+  ) {
     const salary = users.Salary;
-    console.log("salary", salary);
-
-    const currentDate = today.toISOString().slice(0, 10);
-    console.log(today);
-
     // Initiate all database queries concurrently
     const [leaveRecords, attendanceRecords, publicHolidays] = await Promise.all(
       [
@@ -63,18 +36,24 @@ class UserHelper {
           attributes: ["date"],
           where: { date: { [Op.between]: [startDate, endDate] } },
         }),
+        // console.log("Holiday",)
       ]
     );
 
     let userAttendanceList = [];
+    let totalPayroll = 0;
+    const leaveDate = new Set();
 
-    const payrollRate = await this.salaryPerDay(salary, totalDays);
+    const payrollRate = await payRollHelper.salaryPerDay(
+      salary,
+      totalDays,
+      endDate,
+      startDate
+    );
 
     leaveRecords.map((leaveRecord) => {
       const startDate = new Date(leaveRecord.from);
       const endDate = new Date(leaveRecord.to);
-      console.log("start date", startDate);
-      console.log("end date", endDate);
 
       // စတင်ရက်နဲ့ အဆုံးရက်ကြားမှာ ရှိတဲ့ ရက်စွဲတွေကို ထုတ်ယူမယ်။
       for (
@@ -83,69 +62,95 @@ class UserHelper {
         d.setDate(d.getDate() + 1)
       ) {
         const formattedDate = d.toISOString().slice(0, 10);
-        if (formattedDate <= currentDate) {
-          const leave = {
-            date: formattedDate,
-            type: leaveRecord.leaveType,
-            payrollRate: Math.floor(payrollRate),
-          };
-          userAttendanceList.push(leave);
+        if (formattedDate <= endDate.toISOString().slice(0, 10)) {
+          const isAttendanceDate = attendanceRecords.some(
+            (record) => record.date === formattedDate
+          );
+
+          if (!isAttendanceDate) {
+            const leave = {
+              date: formattedDate,
+              type: leaveRecord.leaveType,
+              payrollRate: Math.floor(payrollRate),
+            };
+            totalPayroll += payrollRate;
+            userAttendanceList.push(leave);
+            const dates = leaveDate.add(formattedDate);
+            console.log("leaveDate", dates);
+          }
         }
       }
     });
 
     publicHolidays.map((record) => {
       const date = record.date;
-      console.log(date);
-      if (record.data <= currentDate) {
+      if (date <= endDate.toISOString().slice(0, 10) && !leaveDate.has(date)) {
         const publicHoliday = {
-          date: record.date,
+          date: date,
           type: "holiday",
           payrollRate: Math.floor(payrollRate),
         };
 
+        totalPayroll += payrollRate;
         userAttendanceList.push(publicHoliday);
       }
     });
 
-    const weekendsInfo = this.getWeekends(startDate, endDate);
+    const weekendsInfo = dateHelper.getWeekends(startDate, endDate);
     weekendsInfo.weekends.map((weekend) => {
-      if (weekend <= currentDate) {
+      if (
+        weekend <= endDate.toISOString().slice(0, 10) &&
+        !leaveDate.has(weekend)
+      ) {
         const holiday = {
           date: weekend,
           type: "holiday",
           payrollRate: Math.floor(payrollRate),
         };
 
+        console.log("holiday", holiday);
+        totalPayroll += payrollRate;
         userAttendanceList.push(holiday);
       }
     });
 
     attendanceRecords.map((record) => {
-      const date = record.date;
-      console.log(date);
       const attendanceList = {
         date: record.date,
         type: "present",
         payrollRate: Math.floor(payrollRate),
       };
 
+      totalPayroll += payrollRate;
       userAttendanceList.push(attendanceList);
     });
 
     const updatedData = this.fillAbsentDates(
       userAttendanceList,
       startDate,
-      today
+      endDate
     );
-    return updatedData;
+    const totalCount = updatedData.length;
+    const totalPage = Math.ceil(totalCount / size);
+    const paginatedData = this.paginateData(updatedData, page, size);
+    return { paginatedData, totalPayroll, totalCount, totalPage };
   }
 
-  static fillAbsentDates(data, startDate, today) {
+  // pagination
+  static paginateData(data, page, size) {
+    const startIndex = page * size;
+    const endIndex = startIndex + size;
+    const paginatedData = data.slice(startIndex, endIndex);
+
+    return paginatedData;
+  }
+  static fillAbsentDates(data, startDate, endDate) {
     const dateSet = new Set(data.map((item) => item.date)); // Collect all existing dates from data
     let currentDate = new Date(startDate);
-
-    while (currentDate <= today) {
+    while (
+      currentDate.toISOString().slice(0, 10) <=
+      endDate.toISOString().slice(0, 10)
+    ) {
       const formattedDate = currentDate.toISOString().slice(0, 10);
       if (!dateSet.has(formattedDate)) {
         data.push({
@@ -160,7 +165,15 @@ class UserHelper {
     return data.sort((a, b) => a.date.localeCompare(b.date)); // Sort the data by date
   }
 
-  static async userListById(userId, startDate, endDate, totalDays, res) {
+  static async userListById(
+    userId,
+    startDate,
+    endDate,
+    totalDays,
+    res,
+    page = 0,
+    size
+  ) {
     const users = await Users.findByPk(userId);
 
     const attendance = await this.attendanceRecord(
@@ -168,7 +181,9 @@ class UserHelper {
       startDate,
       endDate,
       totalDays,
-      users
+      users,
+      page,
+      size
     );
     res.json({
       columns: [
@@ -177,7 +192,11 @@ class UserHelper {
         { Header: "Payroll Rate", accessor: "payrollRate" },
       ],
       username: users.username,
-      datas: attendance,
+      datas: attendance.paginatedData,
+      totalPayroll: attendance.totalPayroll,
+      totalPage: attendance.totalPage,
+      totalCount: attendance.totalCount,
+      createdAt: users.createdAt,
     });
   }
 }

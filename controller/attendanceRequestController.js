@@ -16,8 +16,8 @@ const createAttendanceRequest = async (req, res) => {
   // DB တွင် pending state သုံးပြီး record တကြောင်းတိုးပေးရန်
   const result = await UserHelper.createNewAttendanceRequest(attendaceRequest);
   result
-    ? res.status(200).send("Successfully Requested To HR")
-    : res.status(400).send("Already Requested To HR");
+    ? res.status(200).send({ message: "Successfully Requested To HR" })
+    : res.status(400).send({ message: "Already Requested To HR" });
 };
 
 // Admin မှ Confirmed(true or false) လုပ်ထားသော request များ
@@ -31,19 +31,23 @@ const confirmRequest = async (req, res) => {
     UserId: UserId || 3,
     adminApproved: adminApproved || false,
   };
+  console.log(" Entering This function with new request", attendaceRequest);
   if (await UserHelper.checkUserInAttendanceDB(UserId)) {
     // API မှ adminApproved ကို ture လို့ထားပြီး request လုပ်လာပါက...
+    console.log("Passing User Attendace In DB");
     if (!attendaceRequest.adminApproved) {
-      await SendNoti(
-        "Reject Case Noti",
-        "  We regret to inform you that your request has been denied by the admin due to various reasons.",
-        UserId
-      );
+      // await SendNoti(
+      //   "Reject Case Noti",
+      //   "  We regret to inform you that your request has been denied by the admin due to various reasons.",
+      //   UserId
+      // );
       return res
         .status(400)
         .send(
           "မင်းမှာ count ရှိသေးပေမဲ့ admin မှ အကြောင်းကြောင်းကြောင့် ပယ်ချလိုက်ပါတယ်."
         );
+    } else {
+      res.status(200).json({ message: "Successfully Approved" });
     }
 
     if (!(await UserHelper.checkUserAlreadyApproved(UserId, date)))
@@ -103,7 +107,7 @@ const getAttendanceRequest = async (req, res) => {
 
   const whereUser = {
     ...(username && { username: { [Op.like]: `%${username}%` } }),
-    ...(employeeId && { EmployeeId: employeeId }),
+    ...(employeeId && { EmployeeId: { [Op.like]: `%${employeeId}%` } }),
     ...(position && { Position: position }),
   };
   const userInclude = {

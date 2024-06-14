@@ -1,3 +1,30 @@
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Payroll:
+ *       type: object
+ *       required:
+ *         - attendance
+ *         - payrollRate
+ *         - penalty
+ *         - payroll
+ *         - UserId
+ *       properties:
+ *         attendance:
+ *           type: number
+ *         payrollRate:
+ *           type: number
+ *           format: float
+ *         penalty:
+ *           type: number
+ *           format: float
+ *         payroll:
+ *           type: number
+ *           format: float
+ *         UserId:
+ *           type: number
+ */
 module.exports = (sequelize, DataTypes) => {
   const Payroll = sequelize.define("Payroll", {
     attendance: {

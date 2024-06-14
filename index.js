@@ -36,6 +36,8 @@ app.use(cookieParser());
 
 // Default value resetter
 require("./config/scheduler");
+app.use("/api/v1/users", user);
+// app.use(verifyJWT);
 
 // Routes API
 app.use("/api/v1/mapCheck", authlocation);
@@ -53,10 +55,7 @@ app.use("/api/v1/updateProfileImage", profileImage);
 // For Regenerating Access Token
 app.use("/api/v1/refresh", handleRefresh);
 
-app.use("/api/v1/users", user);
-
 // Just for testing purpose
-// app.use(verifyJWT);
 app.use("/api/v1/test", testRoute);
 
 // For handling unknown request

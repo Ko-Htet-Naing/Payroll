@@ -1,16 +1,20 @@
+const { eachHourOfInterval } = require("date-fns");
 const { Department } = require("../models");
 
 const create = async (req, res) => {
-  const payload = req.body.deptName;
-  if (!payload) return res.status(404).send("Data Not Found");
-
-  const existingDeptName = await Department.findOne({
-    where: { deptName: payload },
-  });
-  if (existingDeptName)
-    return res.status(400).send("department name already exists");
-  await Department.create(payload);
-  res.status(200).send("Created");
+  const { deptName } = req.body;
+  if (!deptName) return res.status(404).send("Data Not Found");
+  try {
+    await Department.create({ deptName });
+    res.status(200).send("Created");
+  } catch (error) {
+    if (error.name === "SequelizeUniqueConstraintError") {
+      res.status(400).json({ message: "Department name already exists." });
+    } else {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
 };
 const getAllData = async (req, res) => {
   const data = await Department.findAll();

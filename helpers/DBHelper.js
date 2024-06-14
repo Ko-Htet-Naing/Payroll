@@ -1,4 +1,9 @@
-const { Users, Attendance, Attendance_Record } = require("../models");
+const {
+  Users,
+  Attendance,
+  Attendance_Record,
+  LeaveRecord,
+} = require("../models");
 const { Op } = require("sequelize");
 
 class UserHelper {

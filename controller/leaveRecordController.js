@@ -23,7 +23,7 @@ const createLeave = async (req, res) => {
     from: from || "2024-5-10",
     to: to || "2024-5-10",
     UserId: UserId || 1,
-    attachmentUrl: attachmentUrl || null,
+    attachmentUrl: attachmentUrl || "File From URL",
   };
 
   const result = await createNewLeaveHelper.createNewLeaveRequest(leaveRecords);

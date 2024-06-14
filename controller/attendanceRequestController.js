@@ -1,82 +1,120 @@
 const { Attendance_Record, Department, Users } = require("../models");
 const { Op } = require("sequelize");
 const UserHelper = require("../helpers/DBHelper");
-const { SendNoti } = require("../helpers/SendNoti");
+const { SendNoti, isValidToken } = require("../helpers/SendNoti");
 
 // create attendance request
 const createAttendanceRequest = async (req, res) => {
   const { reason, date, UserId } = req.body;
   if (!reason || !date || !UserId)
-    return res.status(404).send("Credential Missing!");
+    return res.status(404).json({ message: "Credential Missing!" });
   const attendaceRequest = {
-    reason: reason || "in_time_late", // "out_time_late"
-    date: date || "2024-5-13",
-    UserId: UserId || 3,
+    reason: reason,
+    date: date,
+    UserId: UserId,
   };
   // DB တွင် pending state သုံးပြီး record တကြောင်းတိုးပေးရန်
   const result = await UserHelper.createNewAttendanceRequest(attendaceRequest);
-  result
-    ? res.status(200).send({ message: "Successfully Requested To HR" })
-    : res.status(400).send({ message: "Already Requested To HR" });
+  result?.isSuccess
+    ? res.status(200).json({ message: result.message })
+    : res.status(400).json({ message: result.message });
 };
 
 // Admin မှ Confirmed(true or false) လုပ်ထားသော request များ
 const confirmRequest = async (req, res) => {
-  const { reason, date, UserId, adminApproved } = req.body;
-  if (!reason || !date || !UserId)
-    return res.status(400).send("Credential Missing");
-  const attendaceRequest = {
-    reason: reason || "in_time_late", // "out_time_late"
-    date: date || "2024-5-13",
-    UserId: UserId || 3,
-    adminApproved: adminApproved || false,
-  };
-  console.log(" Entering This function with new request", attendaceRequest);
-  if (await UserHelper.checkUserInAttendanceDB(UserId)) {
-    // API မှ adminApproved ကို ture လို့ထားပြီး request လုပ်လာပါက...
-    console.log("Passing User Attendace In DB");
-    if (!attendaceRequest.adminApproved) {
-      // await SendNoti(
-      //   "Reject Case Noti",
-      //   "  We regret to inform you that your request has been denied by the admin due to various reasons.",
-      //   UserId
-      // );
-      return res
-        .status(400)
-        .send(
-          "မင်းမှာ count ရှိသေးပေမဲ့ admin မှ အကြောင်းကြောင်းကြောင့် ပယ်ချလိုက်ပါတယ်."
-        );
-    } else {
-      res.status(200).json({ message: "Successfully Approved" });
-    }
+  const { id, adminApproved } = req.body;
+  if (!id || adminApproved === undefined || adminApproved === null)
+    return res.status(404).json({ message: "UserId or adminApproved Missing" });
+  const userData = await UserHelper.getUserData(id);
+  if (!userData) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  const { date, reason, UserId } = userData;
+  if (!adminApproved) {
+    // User request အား Reject လုပ်တဲ့ case
+    // Leave Count ကို စစ်နိုင်တဲ့ function
 
-    if (!(await UserHelper.checkUserAlreadyApproved(UserId, date)))
-      return res.status(400).json({
-        message: "adminApproved :Admin မှ Approved လုပ်ပေးပြီးသားမို့လို့ပါ",
-        success: false,
-      });
-
-    if (!(await UserHelper.findUserAttendanceLeaveCount(UserId)))
+    // Reject လုပ်ပြီးသားလား မလုပ်ရသေးဘူး လား စစ်ဆေးပေးတဲ့ function
+    const rejectedResult = await UserHelper.checkUserAlreadyApproved(
+      id,
+      "Rejected"
+    );
+    if (!rejectedResult.isSuccess)
       return res.status(401).json({
-        message: "You don't have any leave count",
-        success: false,
+        message: rejectedResult.message,
+        isSuccess: rejectedResult.isSuccess,
       });
+    await Users.increment("AttendanceLeave", {
+      by: 1,
+      where: { id: UserId },
+    });
+    if (!(await isValidToken(UserId))) {
+      await UserHelper.sendPendingMessageInDB(
+        UserId,
+        `Dear ${await UserHelper.getUsernameFromDB(UserId)} Rejected Case Noti`,
+        "We would like to inform you that your request has been rejected by the admin."
+      );
+      return res.status(200).json({ message: "Notification Send" });
+    }
+    await UserHelper.updateUserStatusInDB(UserId, date, "Rejected");
 
-    // User ရဲ့ AM PM ပေါ်မူတည်ပြီး time ကို ပြုပြင်ခြင်း
-    const result = await UserHelper.findAndReplace(UserId, reason, date);
-    if (result.success) {
-      // attendance request table တွင် ရလဒ်ပေါ်မူတည်ပြီး Approved Rejected ပြင်ရန်
-      await UserHelper.updateUserStatusInDB(UserId, date);
-      // အောင်မြင်ကြောင်း notification
+    // Reject notification
+    await SendNoti(
+      `Rejected Case Noti`,
+      "  We would like to inform you that your request has been rejected by the admin.",
+      UserId
+    );
+    res.status(200).json({ message: rejectedResult?.message });
+  } else {
+    // User Request အား Approve လုပ်တဲ့ Case
+    // User ကို approved လုပ်ပြီးသား ဟုတ်မဟုတ် စစ်ဆေးပေးတဲ့ function
+    const approvedResult = await UserHelper.checkUserAlreadyApproved(
+      id,
+      "Approved"
+    );
 
-      res
-        .status(200)
-        .json({ message: result.message, success: result.success });
-    } else if (result.success === false) {
-      res.status(200).send({
-        message: result.message,
-        success: result.success,
+    if (!approvedResult.isSuccess)
+      return res.status(404).json({
+        message: approvedResult.message,
+        isSuccess: approvedResult?.isSuccess,
       });
+    // Request Database အတွင်း Approved Reject ပြင်ခြင်း
+    const rejectResult = await UserHelper.confirmRequest(id, "Approved");
+    //  Attendance Database ထဲမှာ time ပြုပြင်ခြင်း
+    if (rejectResult) {
+      const result = await UserHelper.findAndReplace(UserId, reason, date);
+      console.log(result);
+      if (result.success) {
+        await UserHelper.updateUserStatusInDB(UserId, date, "Approved");
+        res
+          .status(200)
+          .json({ message: result.message, success: result.success });
+        // အောင်မြင်ကြောင်း notification
+
+        if (!(await isValidToken(UserId))) {
+          // Noti for token invalid user
+          const result = await UserHelper.sendPendingMessageInDB(
+            UserId,
+            `Rejected Case Noti`,
+            "We would like to inform you that your request has been rejected by the admin."
+          );
+          if (result > 0)
+            return res
+              .status(200)
+              .json({ message: "Rejecting operation success" });
+        }
+        // Notif for token valid user
+        await SendNoti(
+          `Approved Case Noti`,
+          "  We would like to inform you that your request has been accepted by the admin.",
+          UserId
+        );
+      } else if (result.success === false) {
+        res.status(200).send({
+          message: result.message,
+          success: result.success,
+        });
+      }
     }
   }
 };

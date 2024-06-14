@@ -1,50 +1,42 @@
 const { Users } = require("../models");
 const jwt = require("jsonwebtoken");
 const { comparePassword } = require("./Hash");
-const { refreshToken } = require("firebase-admin/app");
 
 // login Section With JWT
 const login = async (req, res) => {
-  let { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(404).send("Username and Password Not Found");
+  let { employeeId, password } = req.body;
+  if (!employeeId || !password) {
+    return res.status(404).send("employeeId or password missing");
   }
   const user = await Users.findOne({
-    where: { username: username },
+    where: { EmployeeId: employeeId },
+    raw: true,
   });
   if (!user) return res.status(404).send("User not found");
   const dbComparePassword = await comparePassword(password, user.password);
   if (!dbComparePassword)
     return res.status(401).send({ message: "Wrong Password" });
-  const dbUsername = user.username;
+  const dbEmployeeId = user.EmployeeId;
   const role = user.Role;
-
   // Token Creation
   const accessToken = jwt.sign(
-    { UserInfo: { username: dbUsername, role: role } },
+    { UserInfo: { empId: dbEmployeeId, role: role } },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "3h" }
+    { expiresIn: "2m" }
   );
   const refreshTokenToStore = jwt.sign(
     {
-      UserInfo: { username: dbUsername },
+      UserInfo: { empId: dbEmployeeId, role: role },
     },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: "1d" }
   );
+
   // Update Refresh Token Data
   await Users.update(
-    { refreshToken: refreshTokenToStore },
-    { where: { username: dbUsername } }
+    { CurrentAccessToken: accessToken, refreshToken: refreshTokenToStore },
+    { where: { EmployeeId: dbEmployeeId } }
   );
-
-  //Setting cookie
-  // res.cookie("jwt_ref", refreshTokenToStore, {
-  //   secure: false, // Set to true for HTTPS
-  //   sameSite: "None",
-  //   httpOnly: true,
-  //   maxAge: 24 * 60 * 60 * 1000,
-  // });
 
   // user ကို ပြန်ပို့မယ့် data
   const dataToSendUser = {

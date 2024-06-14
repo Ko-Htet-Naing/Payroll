@@ -11,7 +11,6 @@ const userCount = require("./routes/api/userCount");
 
 // Auth လုပ်ချိန်တွင်
 const verifyJWT = require("./middleware/verifyJWT");
-
 const attendance = require("./routes/api/attendance");
 const leaveRecord = require("./routes/api/leaveRecords");
 const attendanceRequest = require("./routes/api/attendanceRequest");
@@ -20,6 +19,7 @@ const holidays = require("./routes/api/holidays");
 const profileImage = require("./routes/api/profileImage");
 const swaggerDocs = require("./utils/swagger");
 const fcm = require("./routes/api/fcm");
+const location = require("./routes/api/location");
 
 const db = require("./models");
 
@@ -36,26 +36,28 @@ app.use(cookieParser());
 
 // Default value resetter
 require("./config/scheduler");
+app.use("/api/v1/refresh", handleRefresh);
 app.use("/api/v1/users", user);
-// app.use(verifyJWT);
+app.use(verifyJWT);
 
 // Routes API
 app.use("/api/v1/mapCheck", authlocation);
 // middleware
 app.use("/api/v1/departments", department);
-app.use("/api/v1/attendance", attendance);
+
 app.use("/api/v1/leaveRecord", leaveRecord);
 app.use("/api/v1/attendanceRequest", attendanceRequest);
 app.use("/api/v1/userCount", userCount);
 app.use("/api/v1/payroll", payroll);
 app.use("/api/v1/holidays", holidays);
+// send location data
+app.use("/api/v1/location", location);
 // send FCM Token to backend from mobile api
 app.use("/api/v1/fcm", fcm);
 app.use("/api/v1/updateProfileImage", profileImage);
 // For Regenerating Access Token
-app.use("/api/v1/refresh", handleRefresh);
 
-// Just for testing purpose
+app.use("/api/v1/attendance", attendance);
 app.use("/api/v1/test", testRoute);
 
 // For handling unknown request

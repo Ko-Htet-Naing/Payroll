@@ -1,8 +1,9 @@
+const { isValid } = require("date-fns");
 const {
   Users,
   Attendance,
   Attendance_Record,
-  LeaveRecord,
+  Pending_Notification,
 } = require("../models");
 const { Op } = require("sequelize");
 
@@ -15,6 +16,21 @@ class UserHelper {
    * @throws {Error} - Throws an error if the database query fails.
    */
 
+  // save pending notification in database
+  static async sendPendingMessageInDB(userId, title, message) {
+    try {
+      const result = await Pending_Notification.create({
+        UserId: userId,
+        title: title,
+        message: message,
+      });
+      return result;
+    } catch (error) {
+      console.log("Error while adding pending notification to database");
+      throw new Error(error.message);
+    }
+  }
+
   // Check User Exist in database
   static async checkUserInDB(userId) {
     try {
@@ -24,6 +40,15 @@ class UserHelper {
       console.log("Error while finding user in database", error);
       throw new Error("Database query failed");
     }
+  }
+
+  // change user request to rejected
+  static async confirmRequest(Id, hrDecision) {
+    const result = await Attendance_Record.update(
+      { status: hrDecision },
+      { where: { id: Id } }
+    );
+    return !!result;
   }
 
   // static Get Username from database
@@ -42,14 +67,27 @@ class UserHelper {
       throw new Error(error);
     }
   }
-
   // Check User Exists in Attendance Table
-  static async checkUserInAttendanceDB(userId) {
+  // static async checkUserInAttendanceDB(userId) {
+  //   try {
+  //     const user = await Attendance.findOne({ where: { UserId: userId } });
+  //     return !!user; // return true if user exists, otherwise false
+  //   } catch (error) {
+  //     console.log("Error while finding attendance in database", error);
+  //     throw new Error("Attendance Database query failed");
+  //   }
+  // }
+
+  // Check User data in attendance database
+  static async getUserData(Id) {
     try {
-      const user = await Attendance.findOne({ where: { UserId: userId } });
-      return !!user; // return true if user exists, otherwise false
+      return await Attendance_Record.findOne({
+        where: { id: Id },
+        attributes: ["date", "reason", "UserId"],
+        raw: true,
+      });
     } catch (error) {
-      console.log("Error while finding attendance in database", error);
+      console.log("Error while finding attendance in database", error.message);
       throw new Error("Attendance Database query failed");
     }
   }
@@ -80,6 +118,7 @@ class UserHelper {
             const result = await Attendance.update(
               {
                 in_time: "8:30",
+                late_in_time: 0,
               },
               {
                 where: {
@@ -144,7 +183,7 @@ class UserHelper {
         if (isOutTimeNull?.out_time === null) {
           try {
             const result = await Attendance.update(
-              { out_time: "16:30" },
+              { out_time: "16:30", early_out_time: 0 },
               {
                 where: {
                   UserId: userId,
@@ -222,36 +261,37 @@ class UserHelper {
   // Current user ဟာ Approved ဟုတ်မဟုတ်စစ်ဆေး
   // Approved ဆိုရင် true ပြန်
   // Pending ဆိုရင် false ပြန်
-  static async checkUserAlreadyApproved(userId, date) {
-    // Attendance Records ထဲမှာ Pending state နဲ့ Approved State တွေကို ရှာမယ်
+  static async checkUserAlreadyApproved(Id, hrDecision) {
     try {
       const result = await Attendance_Record.findOne({
         where: {
-          UserId: userId,
-          date: date,
-          status: { [Op.in]: ["Pending", "Approved"] },
+          id: Id,
         },
+        attributes: ["status"],
+        raw: true,
       });
-      if (result) {
-        if (result.status === "Approved") {
-          // Approved ဖြစ်ပြီးသားဆိုရင် false ဆိုတာ အလုပ်ပေးမလုပ်တဲ့ သဘော
-          // Approved ဖြစ်နေပြီးသားဆိုတာ User ကို အကြောင်းပြန်ပေးမယ်
-          return false;
-        } else if (result.status === "Pending") {
-          // Pending ဆိုမှ true ပြန်ပြီး အလုပ်ပေးလုပ်မယ်ဆိုတဲ့ သဘော
-          return true;
-        }
-      } else {
-        return "User Not exists in Attendance_Records Table";
+      if (!result) {
+        return {
+          isSuccess: false,
+          message: "User does not exist in Attendance_Records Table",
+        };
       }
+      if (result.status === hrDecision) {
+        return {
+          isSuccess: false,
+          message: `HR already ${hrDecision} your request.`,
+        };
+      }
+      return { isSuccess: true, message: `Your request are ${hrDecision}...` };
     } catch (error) {
       console.log("Error while fetching data from database", error);
+      throw new Error("Database query failed");
     }
   }
   // User ရဲ့ status (  Pending to Approved ) ကို database ထဲမှာ ပြုပြင်တဲ့ function
-  static async updateUserStatusInDB(UserId, date) {
+  static async updateUserStatusInDB(UserId, date, status) {
     await Attendance_Record.update(
-      { status: "Approved" },
+      { status: status },
       {
         where: {
           UserId: UserId,
@@ -269,6 +309,13 @@ class UserHelper {
   }
 
   static async createNewAttendanceRequest(objects) {
+    const timeLateSector =
+      objects.reason === "in_time_late"
+        ? "in_time"
+        : objects.reason === "out_time_late"
+        ? "out_time"
+        : null;
+
     try {
       const existingRequest = await Attendance_Record.findOne({
         where: {
@@ -277,21 +324,69 @@ class UserHelper {
           UserId: objects.UserId,
         },
       });
+      console.log("Current Existing Request is : ", existingRequest);
       // တိုက်စစ်တုန်း ထပ်နေတဲ့ data ရှိမနေလို့ Null နှင့်စစ်ထားတာ..
       if (existingRequest === null) {
-        await Attendance_Record.create({
-          reason: objects.reason,
-          date: objects.date,
-          UserId: objects.UserId,
+        // လက်ရှိ date ရဲ့ in_time out_time null ဖြစ်မဖြစ် စစ်ဆေးခြင်း
+        const isValidRequest = await Attendance.findOne({
+          where: {
+            [Op.and]: [{ date: objects.date }, { UserId: objects.UserId }],
+          },
+          attributes: [timeLateSector],
+          raw: true,
         });
-        return true;
+        console.log(
+          "Is valid request with timelateSector : ",
+          isValidRequest[timeLateSector]
+        );
+        console.log(
+          "Is valid request variable : ",
+          isValidRequest?.[timeLateSector] === null
+        );
+
+        if (isValidRequest?.[timeLateSector] === null) {
+          // သူ request လုပ်တဲ့ အချိန်မှာ သူ့ရဲ့ in_time ဒါမှမဟုတ်
+          // out_time ဟာ null ဖြစ်နေမှ request ပေးတင်မယ်လို့စစ်တာ
+          const { AttendanceLeave } = await Users.findOne({
+            attributes: ["AttendanceLeave"],
+            where: {
+              id: objects.UserId,
+            },
+          });
+          if (!parseInt(AttendanceLeave) > 0) {
+            return {
+              isSuccess: false,
+              message: "You don't have any attendance leave count",
+            };
+          }
+          await Users.decrement("AttendanceLeave", {
+            by: 1,
+            where: { id: objects.UserId },
+          });
+          await Attendance_Record.create({
+            reason: objects.reason,
+            date: objects.date,
+            UserId: objects.UserId,
+          });
+          return {
+            isSuccess: true,
+            message: "Successfully Requested To HR",
+          };
+        } else {
+          return {
+            isSuccess: false,
+            message: `You already click ${timeLateSector}. So, you cannot take request...`,
+          };
+        }
       } else {
-        return false;
+        return {
+          isSuccess: false,
+          message: `You already requested for this ${timeLateSector}`,
+        };
       }
     } catch (error) {
       console.log("Error while adding new user : ", error);
       throw new Error(error);
-      return [];
     }
   }
 }

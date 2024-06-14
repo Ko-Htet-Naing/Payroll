@@ -83,6 +83,10 @@ module.exports = (sequelize, DataType) => {
       type: DataType.STRING,
       allowNull: false,
     },
+    CurrentAccessToken: {
+      type: DataType.STRING,
+      allowNull: true,
+    },
     EmployeeId: {
       type: DataType.STRING,
       allowNull: false,
@@ -139,6 +143,7 @@ module.exports = (sequelize, DataType) => {
     Users.hasMany(models.Attendance_Record, { foreignKey: "UserId" });
     Users.hasOne(models.Fcm_Tokens, { foreignKey: "UserId" });
     Users.hasMany(models.Payroll, { foreignKey: "UserId" });
+    Users.hasMany(models.Pending_Notification, { foreignKey: "UserId" });
   };
 
   return Users;

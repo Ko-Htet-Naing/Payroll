@@ -238,5 +238,5 @@ router.put("/update/:id", user.updateUserData);
 router.post("/loginUser", login);
 
 router.post("/resetPassword", ResetPassword);
-router.get("/logout", logout);
+router.get("/logout/:id", logout);
 module.exports = router;

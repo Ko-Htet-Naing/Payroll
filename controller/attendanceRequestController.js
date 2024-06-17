@@ -48,16 +48,21 @@ const confirmRequest = async (req, res) => {
       by: 1,
       where: { id: UserId },
     });
+    console.log(
+      "Token checking in rejected noti: ",
+      await isValidToken(UserId)
+    );
     if (!(await isValidToken(UserId))) {
+      await UserHelper.updateUserStatusInDB(UserId, date, "Rejected");
       await UserHelper.sendPendingMessageInDB(
         UserId,
         `Dear ${await UserHelper.getUsernameFromDB(UserId)} Rejected Case Noti`,
         "We would like to inform you that your request has been rejected by the admin."
       );
-      return res.status(200).json({ message: "Notification Send" });
+      return res.status(200).json({ message: rejectedResult?.message });
     }
+    // Noti မပေးခင် state ပြင်ပေး pending to rejected
     await UserHelper.updateUserStatusInDB(UserId, date, "Rejected");
-
     // Reject notification
     await SendNoti(
       `Rejected Case Noti`,
@@ -68,34 +73,37 @@ const confirmRequest = async (req, res) => {
   } else {
     // User Request အား Approve လုပ်တဲ့ Case
     // User ကို approved လုပ်ပြီးသား ဟုတ်မဟုတ် စစ်ဆေးပေးတဲ့ function
-    const approvedResult = await UserHelper.checkUserAlreadyApproved(
+    const alreadyApprovedResult = await UserHelper.checkUserAlreadyApproved(
       id,
       "Approved"
     );
-
-    if (!approvedResult.isSuccess)
+    if (!alreadyApprovedResult?.isSuccess)
       return res.status(404).json({
-        message: approvedResult.message,
-        isSuccess: approvedResult?.isSuccess,
+        message: alreadyApprovedResult?.message,
+        isSuccess: alreadyApprovedResult?.isSuccess,
       });
     // Request Database အတွင်း Approved ပြင်ခြင်း
-    const rejectResult = await UserHelper.confirmRequest(id, "Approved");
-    //  Attendance Database ထဲမှာ time ပြုပြင်ခြင်း
-    if (rejectResult) {
+    const approvedResult = await UserHelper.confirmRequest(id, "Approved");
+    if (approvedResult) {
+      //  Attendance Database ထဲမှာ time ပြုပြင်ခြင်း
       const result = await UserHelper.findAndReplace(UserId, reason, date);
       if (result.success) {
-        await UserHelper.updateUserStatusInDB(UserId, date, "Approved");
         res
           .status(200)
           .json({ message: result.message, success: result.success });
         // အောင်မြင်ကြောင်း notification
-
+        console.log(
+          "Token checking in successful noti: ",
+          await isValidToken(UserId)
+        );
         if (!(await isValidToken(UserId))) {
           // Noti for token invalid user
           const result = await UserHelper.sendPendingMessageInDB(
             UserId,
-            `Rejected Case Noti`,
-            "We would like to inform you that your request has been rejected by the admin."
+            `Dear ${await UserHelper.getUsernameFromDB(
+              UserId
+            )} Approved Case Noti`,
+            "We would like to inform you that your request has been approved by the admin."
           );
           if (result > 0)
             return res
@@ -104,7 +112,9 @@ const confirmRequest = async (req, res) => {
         }
         // Notif for token valid user
         await SendNoti(
-          `Approved Case Noti`,
+          `Dear ${await UserHelper.getUsernameFromDB(
+            UserId
+          )} Approved Case Noti`,
           "  We would like to inform you that your request has been accepted by the admin.",
           UserId
         );

@@ -1,4 +1,4 @@
-const { Users } = require("../models");
+const { Users, Department } = require("../models");
 const jwt = require("jsonwebtoken");
 const { comparePassword } = require("./Hash");
 
@@ -12,6 +12,7 @@ const login = async (req, res) => {
     where: { EmployeeId: employeeId },
     raw: true,
   });
+  const department = await Department.findByPk(user.DepartmentId);
   if (!user) return res.status(404).send("User not found");
   const dbComparePassword = await comparePassword(password, user.password);
   if (!dbComparePassword)
@@ -53,7 +54,7 @@ const login = async (req, res) => {
     attendanceLeave: user.AttendanceLeave,
     NRC: user.NRC,
     role,
-    department: user.DepartmentId,
+    department: department?.deptName || "",
   };
 
   res.json({

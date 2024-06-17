@@ -63,6 +63,9 @@ app.use("/api/v1/updateProfileImage", profileImage);
 app.use("/api/v1/attendance", attendance);
 app.use("/api/v1/test", testRoute);
 
+// Swagger documentation
+swaggerDocs(app, PORT);
+
 // For handling unknown request
 app.all((req, res) => {
   res.status(404).send(path.join(__dirname, "views", "404.html"));
@@ -70,6 +73,5 @@ app.all((req, res) => {
 db.sequelize.sync({ force: false }).then(() => {
   app.listen(PORT, () => {
     console.log("Server is running on PORT : ", PORT);
-    swaggerDocs(app, PORT);
   });
 });

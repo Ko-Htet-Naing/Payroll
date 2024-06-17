@@ -42,6 +42,7 @@ app.use("/api/v1/login", login);
 app.use(verifyJWT);
 app.use("/api/v1/refresh", handleRefresh);
 app.use("/api/v1/users", user);
+
 // Routes API
 app.use("/api/v1/mapCheck", authlocation);
 // middleware
@@ -60,6 +61,8 @@ app.use("/api/v1/updateProfileImage", profileImage);
 // For Regenerating Access Token
 
 app.use("/api/v1/attendance", attendance);
+
+//app.use(verifyJWT);
 app.use("/api/v1/test", testRoute);
 
 // For handling unknown request

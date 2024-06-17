@@ -1,5 +1,7 @@
 const router = require("express").Router();
-const login = require("../../helpers/Login");
+const Login = require("../../helpers/Login");
+const Logout = require("../../helpers/Logout");
 
-router.post("/loginUser", login);
+router.post("/loginUser", Login);
+router.get("/logoutUser/:id", Logout);
 module.exports = router;

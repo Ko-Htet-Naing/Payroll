@@ -2,7 +2,6 @@ const router = require("express").Router();
 const user = require("../../controller/userController");
 
 const ResetPassword = require("../../helpers/ResetPassword");
-const logout = require("../../helpers/Logout");
 
 /**
  * @swagger
@@ -235,5 +234,4 @@ router.put("/update/:id", user.updateUserData);
  *
  */
 router.post("/resetPassword", ResetPassword);
-router.get("/logout/:id", logout);
 module.exports = router;

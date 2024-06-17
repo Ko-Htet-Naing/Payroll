@@ -289,17 +289,17 @@ class UserHelper {
     }
   }
   // User ရဲ့ status (  Pending to Approved ) ကို database ထဲမှာ ပြုပြင်တဲ့ function
-  static async updateUserStatusInDB(UserId, date, status) {
-    await Attendance_Record.update(
-      { status: status },
-      {
-        where: {
-          UserId: UserId,
-          date: date,
-        },
-      }
-    );
-  }
+  // static async updateUserStatusInDB(UserId, date, status) {
+  //   await Attendance_Record.update(
+  //     { status: status },
+  //     {
+  //       where: {
+  //         UserId: UserId,
+  //         date: date,
+  //       },
+  //     }
+  //   );
+  // }
   // User ရဲ့ status (  Pending to Rejected ) ကို database ထဲမှာ ပြုပြင်တဲ့ function
   static async setUserAttendanceToRejected(UserId, date) {
     console.log(

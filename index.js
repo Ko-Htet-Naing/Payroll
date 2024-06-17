@@ -38,9 +38,10 @@ app.use(cookieParser());
 // Default value resetter
 require("./config/scheduler");
 app.use("/api/v1/login", login);
+app.use("/api/v1/refresh", handleRefresh);
 
 app.use(verifyJWT);
-app.use("/api/v1/refresh", handleRefresh);
+
 app.use("/api/v1/users", user);
 
 // Routes API
@@ -60,10 +61,12 @@ app.use("/api/v1/fcm", fcm);
 app.use("/api/v1/updateProfileImage", profileImage);
 // For Regenerating Access Token
 
-app.use(verifyJWT);
 app.use("/api/v1/attendance", attendance);
 
 app.use("/api/v1/test", testRoute);
+
+// Swagger documentation
+swaggerDocs(app, PORT);
 
 // For handling unknown request
 app.all((req, res) => {
@@ -72,6 +75,5 @@ app.all((req, res) => {
 db.sequelize.sync({ force: false }).then(() => {
   app.listen(PORT, () => {
     console.log("Server is running on PORT : ", PORT);
-    swaggerDocs(app, PORT);
   });
 });

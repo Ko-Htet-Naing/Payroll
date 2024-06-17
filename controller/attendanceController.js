@@ -36,7 +36,21 @@ const getAttendance = async (req, res) => {
       employeeId,
     });
 
-    if (!attendanceList) return res.status(404).json("Attendance not found");
+    const result = attendanceList.map((attendance) => ({
+      id: attendance.id,
+      in_time: attendance.in_time,
+      out_time: attendance.out_time,
+      late_in_time: attendance.late_in_time,
+      early_out_time: attendance.early_out_time,
+      date: attendance.date,
+      userId: attendance.UserId,
+      username: attendance.User.username,
+      employeeId: attendance.User.EmployeeId,
+      position: attendance.User.Position,
+      departmentName: attendance.User.Department.deptName,
+    }));
+
+    //  if (!attendanceList) return res.status(404).json("Attendance not found");
     res.status(200).json({
       columns: [
         { Header: "Name", accessor: "username" },
@@ -47,7 +61,7 @@ const getAttendance = async (req, res) => {
         { Header: "Outtime", accessor: "outtime" },
         { Header: "EmployeeId", accessor: "employeeId" },
       ],
-      datas: attendanceList,
+      datas: result,
       totalPage: Math.ceil(totalCount / size),
       totalCount,
     });

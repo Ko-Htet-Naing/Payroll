@@ -78,12 +78,11 @@ const confirmRequest = async (req, res) => {
         message: approvedResult.message,
         isSuccess: approvedResult?.isSuccess,
       });
-    // Request Database အတွင်း Approved Reject ပြင်ခြင်း
+    // Request Database အတွင်း Approved ပြင်ခြင်း
     const rejectResult = await UserHelper.confirmRequest(id, "Approved");
     //  Attendance Database ထဲမှာ time ပြုပြင်ခြင်း
     if (rejectResult) {
       const result = await UserHelper.findAndReplace(UserId, reason, date);
-      console.log(result);
       if (result.success) {
         await UserHelper.updateUserStatusInDB(UserId, date, "Approved");
         res
@@ -101,7 +100,7 @@ const confirmRequest = async (req, res) => {
           if (result > 0)
             return res
               .status(200)
-              .json({ message: "Rejecting operation success" });
+              .json({ message: "Approved operation success" });
         }
         // Notif for token valid user
         await SendNoti(

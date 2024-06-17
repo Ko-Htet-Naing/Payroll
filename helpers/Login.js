@@ -52,6 +52,8 @@ const login = async (req, res) => {
     medicalLeave: user.MedicalLeave,
     attendanceLeave: user.AttendanceLeave,
     NRC: user.NRC,
+    role,
+    department: user.DepartmentId,
   };
 
   res.json({

@@ -39,8 +39,8 @@ app.use(cookieParser());
 require("./config/scheduler");
 app.use("/api/v1/login", login);
 app.use("/api/v1/refresh", handleRefresh);
-app.use(verifyJWT);
 
+// app.use(verifyJWT);
 app.use("/api/v1/users", user);
 
 // Routes API

@@ -22,6 +22,7 @@ module.exports = (sequelize, DataType) => {
     deptName: {
       type: DataType.STRING,
       allowNull: false,
+      unique: true,
     },
     totalCount: {
       type: DataType.INTEGER,

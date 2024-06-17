@@ -1,8 +1,12 @@
 const { Users, Payroll, Department } = require("../models");
 const userHelper = require("../helpers/UserHelper");
 const payRollHelper = require("../helpers/payRollHelper");
-
-// တလချင်းစီမှာ ရှိတဲ့ user ရဲ့ payroll
+const validationHelper = require("../helpers/validateHelper");
+const dateHelper = require("../helpers/dateHelper");
+let monthNum = 0;
+let year = 0;
+let monthname = null;
+//let startDate, endDate;
 const getPayrollForOneMonth = async (req, res) => {
   const page = Math.max(0, Number.parseInt(req.query.page) || 0);
   const size = Math.min(Math.max(Number.parseInt(req.query.size) || 10, 1), 10);
@@ -10,67 +14,45 @@ const getPayrollForOneMonth = async (req, res) => {
   const position = req.query.position;
   const username = req.query.username;
   const employeeId = req.query.employeeId;
-  const monthname = req.query.monthname;
-  const monthNum = payRollHelper.monthNumber(monthname);
-  if (!monthNum) {
-    return res.status(400).send("Month query parameter is required.");
-  }
+  monthname = req.query.monthname;
+  year = new Date(req.query.year).getFullYear();
 
-  if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
-    return res
-      .status(400)
-      .send("Invalid month. Please provide a value between 1 and 12.");
+  const validation = validationHelper.validateMonth(monthname);
+  if (!validation.isValid) {
+    return res.status(400).json({ error: validation.message });
   }
+  monthNum = validation.monthNum;
 
   const today = new Date();
-  const year = today.getFullYear();
   // eg, 2023-12-26 to 2024-01-25
   const startMonth = monthNum - 2;
+  console.log("startMonth", startMonth);
   const startDate = new Date(Date.UTC(year, startMonth, 26));
   const endDate = new Date(Date.UTC(year, monthNum - 1, 25));
 
-  console.log("start Date", startDate);
-  console.log("end date", endDate);
-
-  const totalDays = await userHelper.totalDays(startDate, endDate);
+  const totalDays = await dateHelper.totalDays(startDate, endDate);
 
   console.log("total", totalDays);
 
-  const whereUser = {
-    ...(username && { username: { [Op.like]: `%${username}%` } }),
-    ...(employeeId && { EmployeeId: employeeId }),
-    ...(position && { Position: position }),
-  };
-
-  const totalCount = await Payroll.count();
-  const totalPage = Math.ceil(totalCount / size);
-
-  const order = [[Users, "username", "ASC"]];
-  const users = await Payroll.findAll({
-    include: [
-      {
-        model: Users,
-        attributes: ["username", "EmployeeId", "Position", "Salary"],
-        where: whereUser,
-        include: [
-          {
-            model: Department,
-            attributes: ["deptName"],
-            ...(department && { where: { deptName: department } }),
-          },
-        ],
-      },
-    ],
-    order: order,
-    limit: size,
-    offset: page * size,
-  });
+  const { users, totalPage, totalCount } =
+    await payRollHelper.getUsersWithPayrollFilters({
+      username,
+      employeeId,
+      position,
+      department,
+      page,
+      size,
+    });
 
   // Query attendance records for this month
 
   const userListWithCalculatedPayroll = await Promise.all(
     users.map(async (user) => {
+      const userId = await Users.findOne({ where: { id: user.UserId } });
+      const createdAt = userId.createdAt;
       if (
+        endDate instanceof Date &&
+        !isNaN(endDate) &&
         endDate.toISOString().slice(0, 10) < today.toISOString().slice(0, 10)
       ) {
         const penalty = await payRollHelper.penalty(
@@ -78,22 +60,27 @@ const getPayrollForOneMonth = async (req, res) => {
           startDate,
           endDate
         );
+        const fund = penalty.fund;
+        const count = penalty.count;
+
         const totalDaysWorked = await payRollHelper.totalDaysWorked(
           user.UserId,
           startDate,
           endDate
         );
-        const payrollRate = await userHelper.salaryPerDay(
+        const payrollRate = await payRollHelper.salaryPerDay(
           user.User.Salary,
-          totalDays
+          totalDays,
+          endDate,
+          createdAt
         );
 
-        const calculatePayroll = totalDaysWorked * payrollRate - penalty;
+        const calculatePayroll = totalDaysWorked * payrollRate - fund;
 
         await user.update({
           payrollRate: payrollRate,
           attendance: totalDaysWorked,
-          penalty: penalty,
+          penalty: fund,
           payroll: calculatePayroll,
         });
         return {
@@ -106,8 +93,10 @@ const getPayrollForOneMonth = async (req, res) => {
           attendance: user.attendance,
           payrollRate: user.payrollRate,
           penalty: user.penalty,
+          count: count,
           payroll: user.payroll,
           userId: user.UserId,
+          createdAt: createdAt,
         };
       } else {
         await user.update({
@@ -126,8 +115,10 @@ const getPayrollForOneMonth = async (req, res) => {
           attendance: user.attendance,
           payrollRate: user.payrollRate,
           penalty: user.penalty,
+          count: 0,
           payroll: user.payroll,
           userId: user.UserId,
+          createdAt: createdAt,
         };
       }
     })
@@ -143,6 +134,7 @@ const getPayrollForOneMonth = async (req, res) => {
       { Header: "attendance", accessor: "attendance" },
       { Header: "payroll rate", accessor: "payrollRate" },
       { Header: "penalty", accessor: "penalty" },
+      { Header: "penalty count", accessor: "count" },
       { Header: "payroll", accessor: "payroll" },
     ],
     datas: userListWithCalculatedPayroll,
@@ -154,29 +146,58 @@ const getPayrollForOneMonth = async (req, res) => {
 // တယောက်ချင်းစီရဲ့ record
 
 const AttendanceListByUserId = async (req, res) => {
-  const userId = req.params.id;
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const date = today.getDate();
+  const page = Math.max(0, Number.parseInt(req.query.page) || 0);
+  const size = Math.min(Math.max(Number.parseInt(req.query.size) || 10, 1), 10);
 
+  const userId = req.params.UserId;
+  const user = await Users.findByPk(userId);
+  const createdAt = user?.createdAt;
+  const today = new Date();
+
+  const validation = validationHelper.validateMonth(monthname);
+  if (!validation.isValid) {
+    return res.status(400).json({ error: validation.message });
+  }
+  monthNum = validation.monthNum;
+
+  const startMonth = monthNum - 2;
   let startDate, endDate;
 
-  if (date > 25) {
-    startDate = new Date(Date.UTC(year, month, 26));
-    endDate = new Date(Date.UTC(year, month + 1, 25));
-    console.log("start Date", startDate);
-    console.log("end date", endDate);
-  } else {
-    startDate = new Date(Date.UTC(year, month - 1, 26));
-    endDate = new Date(Date.UTC(year, month, 25));
-    console.log("start Date", startDate);
-    console.log("end date", endDate);
-  }
+  startDate = new Date(Date.UTC(year, startMonth, 26));
 
-  const totalDays = await userHelper.totalDays(startDate, endDate);
+  endDate = new Date(Date.UTC(year, monthNum - 1, 25));
+
+  const totalDays = await dateHelper.totalDays(startDate, endDate);
   console.log("total Days", totalDays);
-  await userHelper.userListById(userId, startDate, endDate, totalDays, res);
+
+  if (
+    createdAt.toISOString().slice(0, 10) >= startDate.toISOString().slice(0, 10)
+  ) {
+    startDate = createdAt;
+    if (
+      startDate.toISOString().slice(0, 10) === today.toISOString().slice(0, 10)
+    ) {
+      endDate = startDate;
+      console.log("end date", endDate);
+    } else if (
+      startDate.toISOString().slice(0, 10) < today.toISOString().slice(0, 10) &&
+      endDate.toISOString().slice(0, 10) >= today.toISOString().slice(0, 10)
+    ) {
+      endDate = today;
+      console.log("end date", endDate);
+    }
+  } else {
+    endDate = today;
+  }
+  await userHelper.userListById(
+    userId,
+    startDate,
+    endDate,
+    totalDays,
+    res,
+    page,
+    size
+  );
 };
 
 module.exports = { AttendanceListByUserId, getPayrollForOneMonth };

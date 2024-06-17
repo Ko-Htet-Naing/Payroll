@@ -4,7 +4,6 @@ const { hashPassword, comparePassword } = require("../helpers/Hash");
 const { Op } = require("sequelize");
 
 require("dotenv").config();
-
 // Hook to synchronize user after user are inserted
 Users.addHook("afterCreate", async (user, options) => {
   await Payroll.create({ UserId: user.id });
@@ -23,6 +22,7 @@ Users.addHook("afterCreate", async (user, options) => {
 
 // Hook to synchronize after delete user
 Users.addHook("afterDestroy", async (deletedUser, options) => {
+  //await Payroll.destroy({ UserId: deletedUser.id });
   const departmentId = deletedUser.DepartmentId;
   if (departmentId) {
     const userCount = await Users.count({
@@ -40,9 +40,11 @@ const deleteStaff = async (req, res) => {
   const { id } = req.params;
   if (!id) return res.status(404).send("Id not found");
   const user = await Users.findByPk(id);
+  const payroll = await Payroll.findOne({ where: { UserId: id } });
   if (!user) return res.status(404).send("User not found");
   await user.destroy();
-  res.status(200).json({ message: "Delete Successfully!" });
+  await payroll.destroy();
+  res.status(200).send("Delete Successfully!");
 };
 
 // Staff creating
@@ -63,33 +65,38 @@ const createStaff = async (req, res) => {
     medicalLeave,
     attendanceLeave,
     nrc,
-    departmentId,
+    departmentName,
   } = req.body;
-  const profileImage = req.file;
 
   // Check data exists
-  // if (
-  //   !username ||
-  //   !password ||
-  //   !email ||
-  //   !gender ||
-  //   !role ||
-  //   !position ||
-  //   !employeeId ||
-  //   !payroll ||
-  //   !dob ||
-  //   !phoneNumber ||
-  //   !address ||
-  //   !annualLeave ||
-  //   !mediacalLeave ||
-  //   !nrc ||
-  //   !departmentName
-  // )
-  //   return res.status(400).send("Missing Credential");
+  if (
+    !username ||
+    !password ||
+    !email ||
+    !gender ||
+    !role ||
+    !position ||
+    !employeeId ||
+    !salary ||
+    !dob ||
+    !phoneNumber ||
+    !address ||
+    !annualLeave ||
+    !medicalLeave ||
+    !nrc ||
+    !departmentName
+  )
+    return res.status(400).send({ message: "Missing Credential" });
   // Check Also for profile image exists
-  // if (!profileImage) return res.status(404).send("Upload File Not Found");
   const hashedPassword = await hashPassword(password);
-  // Create user data with the file URL
+
+  const department = await Department.findOne({
+    where: { deptName: departmentName },
+  });
+  if (!department) {
+    return res.status(400).json({ message: "Department not found" });
+  }
+
   const userData = {
     username: username || "Hnin Hnin",
     password: hashedPassword || "admin@123",
@@ -108,16 +115,19 @@ const createStaff = async (req, res) => {
     AttendanceLeave: attendanceLeave || 3,
     NRC: nrc || "12/DPN(N)983829",
     refreshToken: null,
-    DepartmentId: departmentId || 2,
+    DepartmentId: department.id || 2,
   };
 
   try {
     // Create the user with the user data
     await Users.create(userData);
     res.status(201).json({ message: "Created User Successfully" });
+    res.status(201).json({ message: "Created User Successfully" });
   } catch (error) {
     if (error.name === "SequelizeUniqueConstraintError") {
-      res.status(400).json({ message: "Employee ID or NRC already exists." });
+      res.status(400).json({
+        message: "Employee ID or NRC or Email or Phone Number already exists.",
+      });
     } else {
       console.error("Error creating user:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -138,7 +148,7 @@ const getUserList = async (req, res, next) => {
     const whereClause = {
       ...(position && { Position: position }),
       ...(username && { username: { [Op.like]: `%${username}%` } }),
-      ...(employeeId && { EmployeeId: employeeId }),
+      ...(employeeId && { EmployeeId: { [Op.like]: `%${employeeId}%` } }),
     };
     // Define a mapping from sort parameter to order configuration
     const sortOrders = {
@@ -188,18 +198,77 @@ const getUserList = async (req, res, next) => {
 const updateUserData = async (req, res) => {
   const { id } = req.params;
 
-  const userId = await Users.findOne({ where: { id: id } });
-  const { role, position, salary, phoneNumber, address } = req.body;
-
-  if (!userId) return res.status(404).json("user id not found");
-  const updateUserData = await userId.update({
-    Role: role,
-    Position: position,
-    Salary: salary,
-    PhoneNumber: phoneNumber,
-    Address: address,
+  const user = await Users.findOne({
+    attributes: [
+      "id",
+      "username",
+      "Position",
+      "EmployeeId",
+      "PhoneNumber",
+      "Salary",
+      "NRC",
+      "DepartmentId",
+      "AnnualLeave",
+      "MedicalLeave",
+      "AttendanceLeave",
+    ],
+    where: { id: id },
   });
-  if (!updateUserData) return res.status(404).json("user not updated");
-  res.status(200).json({ message: "Updated successfully" });
+  const {
+    username,
+    position,
+    employeeId,
+    phoneNumber,
+    salary,
+    departmentId,
+    departmentName,
+    nrc,
+    annualLeave,
+    medicalLeave,
+    attendanceLeave,
+  } = req.body;
+
+  if (!user) return res.status(404).json("user id not found");
+  let updatedUserData = {};
+  const newDepartment = await Department.findOne({
+    where: { deptName: departmentName },
+  });
+  console.log("new department", newDepartment);
+  if (newDepartment.id != departmentId) {
+    updatedUserData = await user.update({
+      username: username,
+      Position: position,
+      EmployeeId: employeeId,
+      PhoneNumber: phoneNumber,
+      Salary: salary,
+      NRC: nrc,
+      AnnualLeave: annualLeave,
+      MedicalLeave: medicalLeave,
+      AttendanceLeave: attendanceLeave,
+      DepartmentId: newDepartment.id,
+    });
+    const department = await Department.findByPk(departmentId);
+
+    await newDepartment.increment("totalCount", { by: 1 });
+    await department.decrement("totalCount", {
+      by: 1,
+    });
+  } else {
+    updatedUserData = await user.update({
+      username: username,
+      Position: position,
+      EmployeeId: employeeId,
+      PhoneNumber: phoneNumber,
+      Salary: salary,
+      NRC: nrc,
+      AnnualLeave: annualLeave,
+      MedicalLeave: medicalLeave,
+      AttendanceLeave: attendanceLeave,
+      DepartmentId: departmentId,
+    });
+  }
+  if (!updatedUserData)
+    return res.status(404).json({ message: "user not updated" });
+  res.status(200).json({ message: "Updated successfully", updatedUserData });
 };
 module.exports = { createStaff, deleteStaff, getUserList, updateUserData };

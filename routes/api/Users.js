@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const user = require("../../controller/userController");
-const attendanceListByUserId = require("../../controller/payrollController");
+
 const login = require("../../helpers/Login");
 const ResetPassword = require("../../helpers/ResetPassword");
 const logout = require("../../helpers/Logout");
@@ -161,10 +161,6 @@ const logout = require("../../helpers/Logout");
 
 router.post("/createUser", user.createStaff);
 router.get("/", user.getUserList);
-router.get(
-  "/attendanceList/:id",
-  attendanceListByUserId.AttendanceListByUserId
-);
 
 router.delete("/deleteUser/:id", user.deleteStaff);
 router.put("/update/:id", user.updateUserData);

@@ -1,6 +1,4 @@
-const moment = require("moment");
 const attendanceHelper = require("../helpers/AttendanceHelper");
-const { get } = require("firebase/database");
 
 const parseQueryParams = (req) => ({
   page: Math.max(0, Number.parseInt(req.query.page) || 0),
@@ -82,7 +80,7 @@ const getAttendanceByUserId = async (req, res) => {
       columns: [
         { Header: "Name", accessor: "username" },
         { Header: "Date", accessor: "date" },
-        { Header: "Department", accessor: "department" },
+        { Header: "Department", accessor: "departmentName" },
         { Header: "Position", accessor: "position" },
         { Header: "Intime", accessor: "intime" },
         { Header: "Outtime", accessor: "outtime" },

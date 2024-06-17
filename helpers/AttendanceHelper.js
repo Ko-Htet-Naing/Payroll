@@ -2,7 +2,9 @@ const { Users, Attendance, Department } = require("../models");
 const { Op } = require("sequelize");
 
 async function getTotalAttendanceCount() {
-  const totalCount = await Attendance.count();
+  const totalCount = await Attendance.count({
+    where: { UserId: { [Op.not]: null } },
+  });
   return totalCount;
 }
 
@@ -12,7 +14,7 @@ async function getTotalAttendacneCountByUserId(userId) {
 }
 
 async function getAttendanceList({
-  page = 0,
+  page,
   size = 10,
   username,
   userId,
@@ -34,7 +36,7 @@ async function getAttendanceList({
     const whereUser = {
       ...(username && { username: { [Op.like]: `%${username}%` } }),
       ...(position && { Position: position }),
-      ...(employeeId && { EmployeeId: employeeId }),
+      ...(employeeId && { EmployeeId: { [Op.like]: `%${employeeId}%` } }),
     };
 
     const userInclude = {

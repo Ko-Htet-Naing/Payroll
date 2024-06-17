@@ -154,7 +154,7 @@ const getAttendanceRequest = async (req, res) => {
 
   const whereUser = {
     ...(username && { username: { [Op.like]: `%${username}%` } }),
-    ...(employeeId && { EmployeeId: employeeId }),
+    ...(employeeId && { EmployeeId: { [Op.like]: `%${employeeId}%` } }),
     ...(position && { Position: position }),
   };
   const userInclude = {

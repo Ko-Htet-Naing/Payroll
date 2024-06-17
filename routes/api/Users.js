@@ -1,7 +1,6 @@
 const router = require("express").Router();
 const user = require("../../controller/userController");
 
-const login = require("../../helpers/Login");
 const ResetPassword = require("../../helpers/ResetPassword");
 const logout = require("../../helpers/Logout");
 
@@ -235,8 +234,6 @@ router.put("/update/:id", user.updateUserData);
  *            description: User already logout
  *
  */
-router.post("/loginUser", login);
-
 router.post("/resetPassword", ResetPassword);
 router.get("/logout/:id", logout);
 module.exports = router;

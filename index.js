@@ -20,6 +20,7 @@ const profileImage = require("./routes/api/profileImage");
 const swaggerDocs = require("./utils/swagger");
 const fcm = require("./routes/api/fcm");
 const location = require("./routes/api/location");
+const login = require("./routes/api/login");
 
 const db = require("./models");
 
@@ -36,10 +37,11 @@ app.use(cookieParser());
 
 // Default value resetter
 require("./config/scheduler");
+app.use("/api/v1/login", login);
+
+app.use(verifyJWT);
 app.use("/api/v1/refresh", handleRefresh);
 app.use("/api/v1/users", user);
-app.use(verifyJWT);
-
 // Routes API
 app.use("/api/v1/mapCheck", authlocation);
 // middleware

@@ -21,7 +21,7 @@ const handleRefreshToken = async (req, res) => {
       const accessToken = jwt.sign(
         { UserInfo: { empId: empId, role: role } },
         process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: "2m" }
+        { expiresIn: "1m" }
       );
       try {
         await Users.update(

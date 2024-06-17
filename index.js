@@ -56,9 +56,9 @@ app.use("/api/v1/fcm", fcm);
 app.use("/api/v1/updateProfileImage", profileImage);
 // For Regenerating Access Token
 
+app.use(verifyJWT);
 app.use("/api/v1/attendance", attendance);
 
-//app.use(verifyJWT);
 app.use("/api/v1/test", testRoute);
 
 // For handling unknown request

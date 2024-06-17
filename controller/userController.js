@@ -122,7 +122,6 @@ const createStaff = async (req, res) => {
     // Create the user with the user data
     await Users.create(userData);
     res.status(201).json({ message: "Created User Successfully" });
-    res.status(201).json({ message: "Created User Successfully" });
   } catch (error) {
     if (error.name === "SequelizeUniqueConstraintError") {
       res.status(400).json({

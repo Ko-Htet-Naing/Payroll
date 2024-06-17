@@ -27,7 +27,7 @@ const options = {
       },
     ],
   },
-  apis: ["./routes/api/*.js", "./models/*.js"],
+  apis: ["./routes/api/*.js", "./models/*.js", "./middleware/verifyJWT.js"],
 };
 const specs = swaggerJsdoc(options);
 const swaggerDocs = (app, port) => {

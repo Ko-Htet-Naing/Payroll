@@ -205,9 +205,27 @@ const updatedStatus = async (req, res) => {
   // attendanceRequest.status = status;
 };
 
+// get attendance request by id
+const getAttendanceRequestById = async (req, res) => {
+  const { id } = req.params;
+  if (!id) return res.status(404).send("Id is missing");
+  const result = await Attendance_Record.findAll({
+    where: {
+      UserId: id,
+    },
+    raw: true,
+  });
+  console.log(result);
+  console.log(result.length);
+  return result.length > 0
+    ? res.status(200).json({ message: result })
+    : res.status(404).json({ message: "You have no attendance request yet." });
+};
+
 module.exports = {
   createAttendanceRequest,
   getAttendanceRequest,
   updatedStatus,
   confirmRequest,
+  getAttendanceRequestById,
 };

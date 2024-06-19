@@ -101,4 +101,8 @@ router.post(
 router.post("/adminApprove", attendanceRequestController.confirmRequest);
 router.get("/", attendanceRequestController.getAttendanceRequest);
 router.patch("/:id", attendanceRequestController.updatedStatus);
+router.get(
+  "/getAttendance/:id",
+  attendanceRequestController.getAttendanceRequestById
+);
 module.exports = router;

@@ -40,4 +40,14 @@ const SendNoti = async (title, message, UserId) => {
     console.log("Null case");
   }
 };
+
+//Send noti using socket.io
+const sentNotification = (userId, message) => {
+  if (userId) {
+    io.to(userId).emit("notification", message);
+  } else {
+    console.log(`User ${userId} is not connected`);
+  }
+};
+
 module.exports = { SendNoti, isValidToken };

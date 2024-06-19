@@ -9,6 +9,10 @@ const corsOptions = require("./config/allowOrigin");
 const cookieParser = require("cookie-parser");
 const userCount = require("./routes/api/userCount");
 
+// For using socket.io
+const { initializeSocket } = require("./config/socketConfig");
+const { createServer } = require("http");
+
 // Auth လုပ်ချိန်တွင်
 const verifyJWT = require("./middleware/verifyJWT");
 const attendance = require("./routes/api/attendance");
@@ -67,12 +71,16 @@ app.use("/api/v1/test", testRoute);
 // Swagger documentation
 swaggerDocs(app, PORT);
 
+// For using socket.io
+const httpServer = createServer(app);
+initializeSocket(httpServer);
+
 // For handling unknown request
 app.all((req, res) => {
   res.status(404).send(path.join(__dirname, "views", "404.html"));
 });
 db.sequelize.sync({ force: false }).then(() => {
-  app.listen(PORT, () => {
-    console.log("Server is running on PORT : ", PORT);
+  httpServer.listen(PORT, () => {
+    console.log("Server is running on port : ", PORT);
   });
 });

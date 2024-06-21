@@ -1,7 +1,7 @@
 const { Attendance_Record, Department, Users } = require("../models");
 const { Op } = require("sequelize");
 const UserHelper = require("../helpers/DBHelper");
-const { SendNoti, isValidToken } = require("../helpers/SendNoti");
+// const { SendNoti, isValidToken } = require("../helpers/SendNoti");
 
 // create attendance request
 const createAttendanceRequest = async (req, res) => {
@@ -52,23 +52,23 @@ const confirmRequest = async (req, res) => {
       "Token checking in rejected noti: ",
       await isValidToken(UserId)
     );
-    if (!(await isValidToken(UserId))) {
-      await UserHelper.updateUserStatusInDB(UserId, date, "Rejected");
-      await UserHelper.sendPendingMessageInDB(
-        UserId,
-        `Dear ${await UserHelper.getUsernameFromDB(UserId)} Rejected Case Noti`,
-        "We would like to inform you that your request has been rejected by the admin."
-      );
-      return res.status(200).json({ message: rejectedResult?.message });
-    }
+    // if (!(await isValidToken(UserId))) {
+    //   await UserHelper.updateUserStatusInDB(UserId, date, "Rejected");
+    //   await UserHelper.sendPendingMessageInDB(
+    //     UserId,
+    //     `Dear ${await UserHelper.getUsernameFromDB(UserId)} Rejected Case Noti`,
+    //     "We would like to inform you that your request has been rejected by the admin."
+    //   );
+    //   return res.status(200).json({ message: rejectedResult?.message });
+    // }
     // Noti မပေးခင် state ပြင်ပေး pending to rejected
     await UserHelper.updateUserStatusInDB(UserId, date, "Rejected");
     // Reject notification
-    await SendNoti(
-      `Rejected Case Noti`,
-      "  We would like to inform you that your request has been rejected by the admin.",
-      UserId
-    );
+    // await SendNoti(
+    //   `Rejected Case Noti`,
+    //   "  We would like to inform you that your request has been rejected by the admin.",
+    //   UserId
+    // );
     res.status(200).json({ message: rejectedResult?.message });
   } else {
     // User Request အား Approve လုပ်တဲ့ Case
@@ -96,28 +96,28 @@ const confirmRequest = async (req, res) => {
           "Token checking in successful noti: ",
           await isValidToken(UserId)
         );
-        if (!(await isValidToken(UserId))) {
-          // Noti for token invalid user
-          const result = await UserHelper.sendPendingMessageInDB(
-            UserId,
-            `Dear ${await UserHelper.getUsernameFromDB(
-              UserId
-            )} Approved Case Noti`,
-            "We would like to inform you that your request has been approved by the admin."
-          );
-          if (result > 0)
-            return res
-              .status(200)
-              .json({ message: "Approved operation success" });
-        }
+        // if (!(await isValidToken(UserId))) {
+        //   // Noti for token invalid user
+        //   const result = await UserHelper.sendPendingMessageInDB(
+        //     UserId,
+        //     `Dear ${await UserHelper.getUsernameFromDB(
+        //       UserId
+        //     )} Approved Case Noti`,
+        //     "We would like to inform you that your request has been approved by the admin."
+        //   );
+        //   if (result > 0)
+        //     return res
+        //       .status(200)
+        //       .json({ message: "Approved operation success" });
+        // }
         // Notif for token valid user
-        await SendNoti(
-          `Dear ${await UserHelper.getUsernameFromDB(
-            UserId
-          )} Approved Case Noti`,
-          "  We would like to inform you that your request has been accepted by the admin.",
-          UserId
-        );
+        // await SendNoti(
+        //   `Dear ${await UserHelper.getUsernameFromDB(
+        //     UserId
+        //   )} Approved Case Noti`,
+        //   "  We would like to inform you that your request has been accepted by the admin.",
+        //   UserId
+        // );
       } else if (result.success === false) {
         res.status(200).send({
           message: result.message,

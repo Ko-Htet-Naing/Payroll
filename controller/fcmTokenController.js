@@ -1,5 +1,4 @@
 const { Fcm_Tokens, Pending_Notification } = require("../models");
-const { admin } = require("../config/firebaseConfig");
 async function fcmTokenControl(req, res) {
   const { userId, token } = req.body;
   if (!userId || !token) return res.status(404).send("UserId or Token Missing");

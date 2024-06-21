@@ -135,7 +135,7 @@ async function decrementLeaveCount(leaveRecords) {
 
   switch (leaveRecords.leaveType) {
     case "Medical Leave":
-      if (user.MedicalLeave === 0) {
+      if (leaveDays > user.MedicalLeave) {
         return { success: false, message: "Do not have medical leave" };
       }
       await user.decrement("MedicalLeave", { by: leaveDays });
@@ -162,6 +162,8 @@ async function decrementLeaveCount(leaveRecords) {
       }
       await user.decrement("MedicalLeave", { by: 0.5 });
       return { success: true };
+    default:
+      return { success: false };
   }
 }
 

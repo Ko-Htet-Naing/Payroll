@@ -214,13 +214,11 @@ const getAttendanceRequestById = async (req, res) => {
   console.log(result);
   console.log(result.length);
   return result.length > 0
-    ? res
-        .status(200)
-        .json({
-          message: result,
-          totalCount: totalCount,
-          totalPage: Math.ceil(totalCount / size),
-        })
+    ? res.status(200).json({
+        message: result,
+        totalCount: totalCount,
+        totalPage: Math.ceil(totalCount / size),
+      })
     : res.status(404).json({ message: "You have no attendance request yet." });
 };
 
@@ -232,32 +230,6 @@ const updatedStatus = async (req, res) => {
   // const attendanceRequest = await Attendance_Record.findByPk(id);
   // if (!attendanceRequest) res.status(404).json("Attendance request not found");
   // attendanceRequest.status = status;
-};
-
-// get attendance request by id
-const getAttendanceRequestById = async (req, res) => {
-  const page = Math.max(0, Number.parseInt(req.query.page) || 0);
-  const size = Math.min(Math.max(Number.parseInt(req.query.size) || 10, 1), 10);
-  const { id } = req.params;
-  if (!id) return res.status(404).send("Id is missing");
-  const totalCount = await Attendance_Record.count({ where: { UserId: id } });
-  const result = await Attendance_Record.findAll({
-    where: {
-      UserId: id,
-    },
-    raw: true,
-    imit: size,
-    offset: page * size,
-  });
-  console.log(result);
-  console.log(result.length);
-  return result.length > 0
-    ? res.status(200).json({
-        message: result,
-        totalCount: totalCount,
-        totalPage: Math.ceil(totalCount / size),
-      })
-    : res.status(404).json({ message: "You have no attendance request yet." });
 };
 
 module.exports = {

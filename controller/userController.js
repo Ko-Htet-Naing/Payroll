@@ -83,7 +83,7 @@ const createStaff = async (req, res) => {
     !address ||
     !annualLeave ||
     !medicalLeave ||
-    !attendanceLeave||
+    !attendanceLeave ||
     !nrc ||
     !departmentName
   )
@@ -216,6 +216,8 @@ const updateUserData = async (req, res) => {
   });
   const {
     username,
+    email,
+    password,
     position,
     employeeId,
     phoneNumber,
@@ -237,6 +239,8 @@ const updateUserData = async (req, res) => {
   if (newDepartment.id != departmentId) {
     updatedUserData = await user.update({
       username: username,
+      Email: email,
+      password: password,
       Position: position,
       EmployeeId: employeeId,
       PhoneNumber: phoneNumber,

@@ -1,6 +1,7 @@
 const moment = require("moment");
 const { format, isSameDay } = require("date-fns");
-const { Attendance } = require("../models");
+const { Attendance, LeaveRecord } = require("../models");
+const leaveHelper = require("../helpers/createNewLeaveHelper");
 const AttendanceClickHelper = require("../helpers/AttendanceClickHelper");
 
 // Main function to handle real-time click
@@ -12,6 +13,25 @@ const realTimeClick = async (req, res) => {
 
   const userArrivalDate = format(dateTime.split(" ")[0], "yyyy-MM-dd");
   const userArrivalTime = dateTime.split(" ")[1];
+
+  // const existingLeaveRecords = await LeaveRecord.findAll({
+  //   where: { UserId: userId },
+  // });
+  // console.log("leaveRecord", existingLeaveRecords);
+  // for (let record of existingLeaveRecords) {
+  //   const existingLeaveDates = leaveHelper.getDatesInRange(
+  //     record.from,
+  //     record.to
+  //   );
+
+  //   console.log("existing leave date", existingLeaveDates);
+
+  //   if (existingLeaveDates.includes(userArrivalDate)) {
+  //     return res
+  //       .status(400)
+  //       .json({ meassage: "Already record in Leave Record" });
+  //   }
+  // }
 
   if (!isSameDay(format(new Date(), "yyyy-MM-dd"), userArrivalDate)) {
     return res.status(404).send("Mismatched date.");

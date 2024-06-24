@@ -145,7 +145,7 @@ const getUserList = async (req, res, next) => {
 
   try {
     const whereClause = {
-      ...(position && { Position: position }),
+      ...(position && { Position: { [Op.like]: `%${position}%` } }),
       ...(username && { username: { [Op.like]: `%${username}%` } }),
       ...(employeeId && { EmployeeId: { [Op.like]: `%${employeeId}%` } }),
     };

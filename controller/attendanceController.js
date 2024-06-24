@@ -59,6 +59,8 @@ const getAttendance = async (req, res) => {
         { Header: "Position", accessor: "position" },
         { Header: "Intime", accessor: "intime" },
         { Header: "Outtime", accessor: "outtime" },
+        { Header: "lateInTime", accessor: "late_in_time" },
+        { Header: "earlyOutTime", accessor: "early_out_time" },
         { Header: "EmployeeId", accessor: "employeeId" },
       ],
       datas: result,
@@ -88,8 +90,8 @@ const getAttendanceByUserId = async (req, res) => {
       toDate,
     });
 
-    if (!attendanceListByUserId)
-      return res.status(404).json("Attendance not found");
+    if (!attendanceListByUserId.length > 0)
+      return res.status(404).json({ message: "Attendance not found" });
     res.status(200).json({
       columns: [
         { Header: "Name", accessor: "username" },
@@ -98,6 +100,8 @@ const getAttendanceByUserId = async (req, res) => {
         { Header: "Position", accessor: "position" },
         { Header: "Intime", accessor: "intime" },
         { Header: "Outtime", accessor: "outtime" },
+        { Header: "lateInTime", accessor: "late_in_time" },
+        { Header: "earlyOutTime", accessor: "early_out_time" },
         { Header: "EmployeeId", accessor: "employeeId" },
       ],
       datas: attendanceListByUserId,

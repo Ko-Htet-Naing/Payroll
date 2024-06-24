@@ -10,6 +10,8 @@ const departmentController = require("../../controller/departmentController");
  *   post:
  *     summary: Create a new department
  *     tags: [Department]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -28,6 +30,8 @@ const departmentController = require("../../controller/departmentController");
  *   get:
  *     summary: list of department
  *     tags: [Department]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: The created department.

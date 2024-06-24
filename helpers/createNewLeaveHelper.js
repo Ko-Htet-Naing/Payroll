@@ -3,20 +3,62 @@ const moment = require("moment");
 const { LeaveRecord, Attendance } = require("../models");
 const leaveRecodHelper = require("./LeaveRecordHelper");
 
+const getDatesInRange = (startDate, endDate) => {
+  console.log("start date", startDate);
+  console.log("end date", endDate);
+  //const dates = new Set();
+  let dates = [];
+  let currentDate = moment(startDate);
+
+  while (currentDate.isSameOrBefore(endDate, "day")) {
+    dates.push(currentDate.format("YYYY-MM-DD"));
+    currentDate.add(1, "days");
+  }
+  // console.log("dates", dates);
+  return dates;
+};
 async function createNewLeaveRequest(objects) {
   try {
-    const getDatesInRange = (startDate, endDate) => {
-      console.log("start date", startDate);
-      console.log("end date", endDate);
-      const dates = new Set();
-      let currentDate = moment(startDate);
+    // const getDatesInRange = (startDate, endDate) => {
+    //   console.log("start date", startDate);
+    //   console.log("end date", endDate);
+    //   //const dates = new Set();
+    //   let dates = [];
+    //   let currentDate = moment(startDate);
 
-      while (currentDate.isSameOrBefore(endDate, "day")) {
-        dates.add(currentDate.format("YYYY-MM-DD"));
-        currentDate.add(1, "days");
+    //   while (currentDate.isSameOrBefore(endDate, "day")) {
+    //     dates.push(currentDate.format("YYYY-MM-DD"));
+    //     currentDate.add(1, "days");
+    //   }
+    //   // console.log("dates", dates);
+    //   return dates;
+    // };
+
+    const doesLeaveOverlapWithNewLeave = async (
+      leaveStartDate,
+      leaveEndDate,
+      userId
+    ) => {
+      const leaveDates = getDatesInRange(leaveStartDate, leaveEndDate);
+      console.log("leave date", leaveDates);
+      const existingLeaveRecords = await LeaveRecord.findAll({
+        where: {
+          UserId: userId,
+        },
+      });
+
+      console.log("existing leave", existingLeaveRecords);
+      for (let record of existingLeaveRecords) {
+        const existingLeaveDates = getDatesInRange(record.from, record.to);
+
+        console.log("existing leave date", existingLeaveDates);
+        for (let date of leaveDates) {
+          if (existingLeaveDates.includes(date)) {
+            return true; // Overlap found
+          }
+        }
       }
-      console.log("dates", dates);
-      return dates;
+      return false;
     };
 
     const doesLeaveOverlapWithAttendance = async (
@@ -31,6 +73,33 @@ async function createNewLeaveRequest(objects) {
           date: { [Op.between]: [leaveStartDate, leaveEndDate] },
         },
       });
+
+      // No overlap
+
+      // const leaveRecords = await LeaveRecord.findAll({
+      //   where: {
+      //     UserId: userId,
+      //     // from: { [Op.between]: [leaveStartDate, leaveEndDate] },
+      //     // to: { [Op.between]: [leaveStartDate, leaveEndDate] },
+      //   },
+      // });
+      // console.log("leave record", leaveRecords);
+      // const leaveDate = [];
+
+      // leaveRecords.map((record) => {
+      //   leaveDate.push(getDatesInRange(record.from, record.to));
+      // });
+
+      // console.log("leave Date", leaveDate);
+
+      // for (let leave of leaveDates) {
+      //   if (leaveDates.map(leave)) {
+      //     //return true
+      //     console.log("overlap");
+      //   } else {
+      //     console.log("no overlap");
+      //   }
+      // }
       const attendanceDates = new Set(
         attendanceRecords.map((record) => record.date)
       );
@@ -43,17 +112,22 @@ async function createNewLeaveRequest(objects) {
       return false;
     };
 
-    const existingRequest = await LeaveRecord.findOne({
-      where: {
-        UserId: objects.UserId,
-        from: objects.from,
-        to: objects.to,
-        leaveType: objects.leaveType,
-      },
-    });
+    // const existingRequest = await LeaveRecord.findOne({
+    //   where: {
+    //     UserId: objects.UserId,
+    //     from: objects.from,
+    //     to: objects.to,
+    //   },
+    // });
     let decrementLeave;
 
-    if (existingRequest === null) {
+    const overlapLeave = await doesLeaveOverlapWithNewLeave(
+      objects.from,
+      objects.to,
+      objects.UserId
+    );
+    console.log("overlap Leave", overlapLeave);
+    if (!overlapLeave) {
       if (
         objects.leaveType === "Morning Leave" ||
         objects.leaveType === "Evening Leave"
@@ -71,9 +145,10 @@ async function createNewLeaveRequest(objects) {
         objects.to,
         objects.UserId
       );
-      if (!overlap) {
+      console.log("overlap attendance", overlap);
+      if (!overlap === !overlapLeave) {
         decrementLeave = await leaveRecodHelper.decrementLeaveCount(objects);
-        if (decrementLeave.success === true) {
+        if (decrementLeave?.success === true) {
           await LeaveRecord.create(objects);
           return { success: true, message: "Successfully created" };
         }
@@ -92,4 +167,4 @@ async function createNewLeaveRequest(objects) {
     throw new Error(error);
   }
 }
-module.exports = { createNewLeaveRequest };
+module.exports = { createNewLeaveRequest, getDatesInRange };

@@ -2,6 +2,19 @@ const { Attendance, Department, Users, LeaveRecord } = require("../models");
 const { Op } = require("sequelize");
 const moment = require("moment");
 
+const getLeaveCountByUserId = async (req, res) => {
+  const { id } = req.params;
+
+  const user = await Users.findByPk(id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+  console.log(user);
+  res.status(200).json({
+    medicalLeave: user.MedicalLeave,
+    annualLeave: user.AnnualLeave,
+    attendanceLeave: user.AttendanceLeave,
+  });
+};
+
 const getUserCount = async (req, res) => {
   // Get current date
   const currentDate = moment().format("YYYY-MM-DD");
@@ -117,4 +130,4 @@ const getUserCount = async (req, res) => {
   await getAllEmployee();
 };
 
-module.exports = { getUserCount };
+module.exports = { getUserCount, getLeaveCountByUserId };

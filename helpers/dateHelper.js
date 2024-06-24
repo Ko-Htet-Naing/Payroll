@@ -14,12 +14,10 @@ class dateHelper {
     let weekends = [];
     let count = 0;
 
-    console.log("current before", currentDate);
     while (
       currentDate.toISOString().slice(0, 10) <=
       endDate.toISOString().slice(0, 10)
     ) {
-      console.log("current after", currentDate);
       // တနင်္ဂနွေနဲ့ စနေတို့ကို စစ်ဆေးမယ်။
       if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
         weekends.push(currentDate.toISOString().slice(0, 10));

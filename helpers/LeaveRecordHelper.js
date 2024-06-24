@@ -164,7 +164,6 @@ async function decrementLeaveCount(leaveRecords) {
       }
       await user.decrement("MedicalLeave", { by: 0.5 });
       return { success: true };
-
     default:
       return { success: false };
   }

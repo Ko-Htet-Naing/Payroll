@@ -70,7 +70,7 @@ app.use("/api/v1/updateProfileImage", profileImage);
 // For Regenerating Access Token
 
 app.use("/api/v1/attendance", attendance);
-
+// Testing route for jwt
 app.use("/api/v1/test", testRoute);
 
 // For handling unknown request

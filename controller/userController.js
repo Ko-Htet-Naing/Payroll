@@ -83,6 +83,7 @@ const createStaff = async (req, res) => {
     !address ||
     !annualLeave ||
     !medicalLeave ||
+    !attendanceLeave||
     !nrc ||
     !departmentName
   )

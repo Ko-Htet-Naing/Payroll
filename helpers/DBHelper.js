@@ -67,17 +67,6 @@ class UserHelper {
       throw new Error(error);
     }
   }
-  // Check User Exists in Attendance Table
-  // static async checkUserInAttendanceDB(userId) {
-  //   try {
-  //     const user = await Attendance.findOne({ where: { UserId: userId } });
-  //     return !!user; // return true if user exists, otherwise false
-  //   } catch (error) {
-  //     console.log("Error while finding attendance in database", error);
-  //     throw new Error("Attendance Database query failed");
-  //   }
-  // }
-
   // Check User data in attendance database
   static async getUserData(Id) {
     try {
@@ -105,7 +94,6 @@ class UserHelper {
             date: userDate,
           },
         });
-        console.log("checking no exists user ", isInTimeNull);
         // (UserId, date) သုံးပြီး တိုက်စစ်လို့ သူ့ လက်ရှိ data တွေနဲ့ တယောက်နဲ့ မှ မကိုက်ညီရင်
         if (isInTimeNull === null) {
           return {
@@ -173,7 +161,6 @@ class UserHelper {
             date: userDate,
           },
         });
-        console.log(isOutTimeNull);
         if (isOutTimeNull === null) {
           return {
             success: false,
@@ -289,17 +276,17 @@ class UserHelper {
     }
   }
   // User ရဲ့ status (  Pending to Approved ) ကို database ထဲမှာ ပြုပြင်တဲ့ function
-  // static async updateUserStatusInDB(UserId, date, status) {
-  //   await Attendance_Record.update(
-  //     { status: status },
-  //     {
-  //       where: {
-  //         UserId: UserId,
-  //         date: date,
-  //       },
-  //     }
-  //   );
-  // }
+  static async updateUserStatusInDB(UserId, date, status) {
+    await Attendance_Record.update(
+      { status: status },
+      {
+        where: {
+          UserId: UserId,
+          date: date,
+        },
+      }
+    );
+  }
   // User ရဲ့ status (  Pending to Rejected ) ကို database ထဲမှာ ပြုပြင်တဲ့ function
   static async setUserAttendanceToRejected(UserId, date) {
     console.log(
@@ -316,6 +303,30 @@ class UserHelper {
         ? "out_time"
         : null;
 
+    // in_time & out_time ၂ခုလုံး null မဖြစ်တာသေချာ မှ ကျန်တာ ပေးလုပ်ခြင်း
+    // early out လုပ်ပစ်ခြင်း
+
+    try {
+      const isValidAttendance = await Attendance.findOne({
+        where: {
+          UserId: objects.UserId,
+          date: objects.date,
+        },
+        attributes: ["in_time", "out_time"],
+        raw: true,
+      });
+      if (!isValidAttendance) {
+        return {
+          isSuccess: false,
+          message:
+            "In_Time Out_Time နှစ်ခုလုံး null ဖြစ်နေပြီး request လာတင်လို့မရဘူးလေကွာ.. မင်းတို့ဆိုသည်မှာလည်း...",
+        };
+      }
+    } catch (error) {
+      console.log("error while validating user in_time and out_time");
+      throw new Error(error);
+    }
+
     try {
       const existingRequest = await Attendance_Record.findOne({
         where: {
@@ -324,7 +335,6 @@ class UserHelper {
           UserId: objects.UserId,
         },
       });
-      console.log("Current Existing Request is : ", existingRequest);
       // တိုက်စစ်တုန်း ထပ်နေတဲ့ data ရှိမနေလို့ Null နှင့်စစ်ထားတာ..
       if (existingRequest === null) {
         // လက်ရှိ date ရဲ့ in_time out_time null ဖြစ်မဖြစ် စစ်ဆေးခြင်း
@@ -335,15 +345,6 @@ class UserHelper {
           attributes: [timeLateSector],
           raw: true,
         });
-        console.log(
-          "Is valid request with timelateSector : ",
-          isValidRequest[timeLateSector]
-        );
-        console.log(
-          "Is valid request variable : ",
-          isValidRequest?.[timeLateSector] === null
-        );
-
         if (isValidRequest?.[timeLateSector] === null) {
           // သူ request လုပ်တဲ့ အချိန်မှာ သူ့ရဲ့ in_time ဒါမှမဟုတ်
           // out_time ဟာ null ဖြစ်နေမှ request ပေးတင်မယ်လို့စစ်တာ

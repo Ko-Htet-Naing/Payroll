@@ -91,7 +91,7 @@ const getAttendanceByUserId = async (req, res) => {
     });
 
     if (!attendanceListByUserId.length > 0)
-      return res.status(404).json({ message: "Attendance not found" });
+      return res.status(200).json({ message: [] });
     res.status(200).json({
       columns: [
         { Header: "Name", accessor: "username" },

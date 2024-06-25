@@ -318,8 +318,7 @@ class UserHelper {
       if (!isValidAttendance) {
         return {
           isSuccess: false,
-          message:
-            "In_Time Out_Time နှစ်ခုလုံး null ဖြစ်နေပြီး request လာတင်လို့မရဘူးလေကွာ.. မင်းတို့ဆိုသည်မှာလည်း...",
+          message: `You cannot request because both of in_time or out_time null at ${objects?.date}`,
         };
       }
     } catch (error) {

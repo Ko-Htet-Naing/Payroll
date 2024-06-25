@@ -49,13 +49,12 @@ const getPayrollForOneMonth = async (req, res) => {
       const userId = await Users.findOne({ where: { id: user.UserId } });
       const createdAt = userId?.createdAt;
       let start = startDate;
-      console.log("created at", createdAt, "userid", user.UserId);
       if (
         createdAt.toISOString().slice(0, 10) >= start.toISOString().slice(0, 10)
       ) {
         start = createdAt;
       }
-      console.log("start date with create", start, "userId", user.UserId);
+
       if (
         endDate instanceof Date &&
         !isNaN(endDate) &&
@@ -69,7 +68,6 @@ const getPayrollForOneMonth = async (req, res) => {
         const fund = penalty.fund;
         const count = penalty.count;
 
-        console.log("total days start", startDate, "userId", user.UserId);
         const totalDaysWorked = await payRollHelper.totalDaysWorked(
           user.UserId,
           start,
@@ -175,7 +173,6 @@ const AttendanceListByUserId = async (req, res) => {
   endDate = new Date(Date.UTC(year, monthNum - 1, 25));
 
   const totalDays = await dateHelper.totalDays(startDate, endDate);
-  console.log("total Days", totalDays);
 
   if (
     createdAt.toISOString().slice(0, 10) >= startDate.toISOString().slice(0, 10)
@@ -185,13 +182,11 @@ const AttendanceListByUserId = async (req, res) => {
       startDate.toISOString().slice(0, 10) === today.toISOString().slice(0, 10)
     ) {
       endDate = startDate;
-      console.log("end date", endDate);
     } else if (
       startDate.toISOString().slice(0, 10) < today.toISOString().slice(0, 10) &&
       endDate.toISOString().slice(0, 10) >= today.toISOString().slice(0, 10)
     ) {
       endDate = today;
-      console.log("end date", endDate);
     }
   } else {
     endDate = today;

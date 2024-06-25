@@ -198,6 +198,26 @@ const getUserList = async (req, res, next) => {
 const updateUserData = async (req, res) => {
   const { id } = req.params;
 
+  const {
+    username,
+    email,
+    password,
+    position,
+    employeeId,
+    gender,
+    role,
+    dob,
+    address,
+    phoneNumber,
+    salary,
+    departmentId,
+    departmentName,
+    nrc,
+    annualLeave,
+    medicalLeave,
+    attendanceLeave,
+  } = req.body;
+
   const user = await Users.findOne({
     attributes: [
       "id",
@@ -212,67 +232,73 @@ const updateUserData = async (req, res) => {
       "MedicalLeave",
       "AttendanceLeave",
     ],
+    // where: { EmployeeId: employeeId },
     where: { id: id },
   });
-  const {
-    username,
-    email,
-    password,
-    position,
-    employeeId,
-    phoneNumber,
-    salary,
-    departmentId,
-    departmentName,
-    nrc,
-    annualLeave,
-    medicalLeave,
-    attendanceLeave,
-  } = req.body;
+  try {
+    if (!user) return res.status(400).json({ message: "user not found" });
+    let updatedUserData = {};
+    const newDepartment = await Department.findOne({
+      where: { deptName: departmentName },
+    });
+    console.log("new department", newDepartment);
+    if (newDepartment.id != departmentId) {
+      updatedUserData = await user.update({
+        username: username,
+        Email: email,
+        password: password,
+        Position: position,
+        EmployeeId: employeeId,
+        Gender: gender,
+        Role: role,
+        DOB: dob,
+        Address: address,
+        PhoneNumber: phoneNumber,
+        Salary: salary,
+        NRC: nrc,
+        AnnualLeave: annualLeave,
+        MedicalLeave: medicalLeave,
+        AttendanceLeave: attendanceLeave,
+        DepartmentId: newDepartment.id,
+      });
+      const department = await Department.findByPk(departmentId);
 
-  if (!user) return res.status(404).json("user id not found");
-  let updatedUserData = {};
-  const newDepartment = await Department.findOne({
-    where: { deptName: departmentName },
-  });
-  console.log("new department", newDepartment);
-  if (newDepartment.id != departmentId) {
-    updatedUserData = await user.update({
-      username: username,
-      Email: email,
-      password: password,
-      Position: position,
-      EmployeeId: employeeId,
-      PhoneNumber: phoneNumber,
-      Salary: salary,
-      NRC: nrc,
-      AnnualLeave: annualLeave,
-      MedicalLeave: medicalLeave,
-      AttendanceLeave: attendanceLeave,
-      DepartmentId: newDepartment.id,
-    });
-    const department = await Department.findByPk(departmentId);
-
-    await newDepartment.increment("totalCount", { by: 1 });
-    await department.decrement("totalCount", {
-      by: 1,
-    });
-  } else {
-    updatedUserData = await user.update({
-      username: username,
-      Position: position,
-      EmployeeId: employeeId,
-      PhoneNumber: phoneNumber,
-      Salary: salary,
-      NRC: nrc,
-      AnnualLeave: annualLeave,
-      MedicalLeave: medicalLeave,
-      AttendanceLeave: attendanceLeave,
-      DepartmentId: departmentId,
-    });
+      await newDepartment.increment("totalCount", { by: 1 });
+      await department.decrement("totalCount", {
+        by: 1,
+      });
+    } else {
+      updatedUserData = await user.update({
+        username: username,
+        Email: email,
+        password: password,
+        Position: position,
+        EmployeeId: employeeId,
+        Gender: gender,
+        Role: role,
+        DOB: dob,
+        Address: address,
+        PhoneNumber: phoneNumber,
+        Salary: salary,
+        NRC: nrc,
+        AnnualLeave: annualLeave,
+        MedicalLeave: medicalLeave,
+        AttendanceLeave: attendanceLeave,
+        DepartmentId: departmentId,
+      });
+    }
+    if (!updatedUserData)
+      return res.status(404).json({ message: "user not updated" });
+    res.status(200).json({ message: "Updated successfully", updatedUserData });
+  } catch (error) {
+    if (error.name === "SequelizeUniqueConstraintError") {
+      res.status(400).json({
+        message: "Employee ID or NRC or Email or Phone Number already exists.",
+      });
+    } else {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
-  if (!updatedUserData)
-    return res.status(404).json({ message: "user not updated" });
-  res.status(200).json({ message: "Updated successfully", updatedUserData });
 };
 module.exports = { createStaff, deleteStaff, getUserList, updateUserData };

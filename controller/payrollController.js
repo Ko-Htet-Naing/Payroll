@@ -24,6 +24,7 @@ const getPayrollForOneMonth = async (req, res) => {
   // eg, 2023-12-26 to 2024-01-25
   const startMonth = monthNum - 2;
   console.log("startMonth", startMonth);
+
   const startDate = new Date(Date.UTC(year, startMonth, 26));
   const endDate = new Date(Date.UTC(year, monthNum - 1, 25));
 
@@ -46,7 +47,15 @@ const getPayrollForOneMonth = async (req, res) => {
   const userListWithCalculatedPayroll = await Promise.all(
     users.map(async (user) => {
       const userId = await Users.findOne({ where: { id: user.UserId } });
-      const createdAt = userId.createdAt;
+      const createdAt = userId?.createdAt;
+      let start = startDate;
+      console.log("created at", createdAt, "userid", user.UserId);
+      if (
+        createdAt.toISOString().slice(0, 10) >= start.toISOString().slice(0, 10)
+      ) {
+        start = createdAt;
+      }
+      console.log("start date with create", start, "userId", user.UserId);
       if (
         endDate instanceof Date &&
         !isNaN(endDate) &&
@@ -54,15 +63,16 @@ const getPayrollForOneMonth = async (req, res) => {
       ) {
         const penalty = await payRollHelper.penalty(
           user.UserId,
-          startDate,
+          start,
           endDate
         );
         const fund = penalty.fund;
         const count = penalty.count;
 
+        console.log("total days start", startDate, "userId", user.UserId);
         const totalDaysWorked = await payRollHelper.totalDaysWorked(
           user.UserId,
-          startDate,
+          start,
           endDate
         );
         const payrollRate = await payRollHelper.salaryPerDay(

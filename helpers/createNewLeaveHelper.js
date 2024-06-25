@@ -152,7 +152,7 @@ async function createNewLeaveRequest(objects) {
           await LeaveRecord.create(objects);
           return { success: true, message: "Successfully created" };
         }
-        return { success: false, message: decrementLeave.message };
+        return { success: false, message: "Already requested to HRs" };
       } else {
         return {
           success: false,
@@ -160,7 +160,7 @@ async function createNewLeaveRequest(objects) {
         };
       }
     } else {
-      return { success: false, message: "Already requested to HRs" };
+      return { success: false, message: "Do not have leave count" };
     }
   } catch (error) {
     console.log("Error while adding new user : ", error);

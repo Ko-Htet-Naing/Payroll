@@ -46,13 +46,13 @@ class payRollHelper {
   }
   // တလမှာ အလုပ်လုပ်တဲ့ ရက်ပေါင်း
   static async totalDaysWorked(userId, startDate, endDate) {
+    let totalDaysWork = 0;
     const user = await Users.findByPk(userId);
     const createdAt = user.createdAt.toISOString().slice(0, 10);
     const attendanceRecord = await Attendance.findOne({
       where: { UserId: userId },
     });
     console.log("attendance record", attendanceRecord);
-    let totalDaysWork = 0;
 
     try {
       const leaveDate = new Set();
@@ -61,26 +61,34 @@ class payRollHelper {
       });
 
       totalDaysWork += attendanceCount;
+      console.log("attendance count", attendanceCount, "userId", userId);
 
       const holidayCount = await Holidays.count({
         where: {
           date: {
-            [Op.between]: [createdAt, endDate],
+            [Op.between]: [startDate, endDate],
             [Op.notIn]: Array.from(leaveDate),
           },
         },
       });
       totalDaysWork += holidayCount;
+      console.log("holiday count", holidayCount, "userId", userId);
 
-      const weekendsInfo = dateHelper.getWeekends(createdAt, endDate);
+      const weekendsInfo = dateHelper.getWeekends(startDate, endDate);
       console.log("weekends Info", weekendsInfo);
       const nonOverlappingWeekends = weekendsInfo.weekends.map((weekend) => {
         !leaveDate.has(weekend);
       });
       totalDaysWork += nonOverlappingWeekends.length;
-      console.log("weekend count", nonOverlappingWeekends.length);
+      console.log(
+        "weekend count",
+        nonOverlappingWeekends.length,
+        "userId",
+        userId
+      );
 
       const leaveRecords = await LeaveRecord.findAll({
+        attributes: ["UserId", "from", "to"],
         where: {
           UserId: userId,
           status: "Approved",
@@ -89,7 +97,8 @@ class payRollHelper {
         },
       });
 
-      leaveRecords.map((leaveRecord) => {
+      //leaveRecords.forEach(async (leaveRecord) => {
+      for (const leaveRecord of leaveRecords) {
         const startDate = new Date(leaveRecord.from);
         const endDate = new Date(leaveRecord.to);
         let count = 0;
@@ -102,22 +111,31 @@ class payRollHelper {
         ) {
           const formattedDate = d.toISOString().slice(0, 10);
           if (formattedDate <= endDate.toISOString().slice(0, 10)) {
-            const isAttendanceDate = Attendance.findOne({
+            const isAttendanceDate = await Attendance.findOne({
               where: { UserId: userId, date: formattedDate },
             });
             if (!isAttendanceDate) {
               count++;
               leaveDate.add(formattedDate);
             }
-            console.log("leave", leaveDate.add(formattedDate));
+            // console.log("leave count", count , "userid", userId);
+            // console.log("leave", leaveDate.add(formattedDate));
           }
         }
         totalDaysWork += count;
-      });
+        console.log("leave count1", count, "userId", userId);
+        console.log("total days work 1", totalDaysWork, "userId", userId);
+      }
+
+      //});
+
+      console.log("total days work finished", totalDaysWork, "userid", userId);
       return totalDaysWork;
     } catch (error) {
       console.error(error);
     }
+    console.log("total days work 2", totalDaysWork);
+    return totalDaysWork;
   }
   static async getUsersWithPayrollFilters({
     username,

@@ -10,10 +10,7 @@ let monthname = null;
 const getPayrollForOneMonth = async (req, res) => {
   const page = Math.max(0, Number.parseInt(req.query.page) || 0);
   const size = Math.min(Math.max(Number.parseInt(req.query.size) || 10, 1), 10);
-  const department = req.query.department;
-  const position = req.query.position;
-  const username = req.query.username;
-  const employeeId = req.query.employeeId;
+  const { department, position, username, employeeId } = req.query;
   monthname = req.query.monthname;
   year = new Date(req.query.year).getFullYear();
 
@@ -53,7 +50,7 @@ const getPayrollForOneMonth = async (req, res) => {
       if (
         endDate instanceof Date &&
         !isNaN(endDate) &&
-        endDate.toISOString().slice(0, 10) < today.toISOString().slice(0, 10)
+        endDate.toISOString().slice(0, 10) <= today.toISOString().slice(0, 10)
       ) {
         const penalty = await payRollHelper.penalty(
           user.UserId,

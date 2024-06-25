@@ -22,11 +22,6 @@
  *         UserId:
  *           type: integer
  *           description: userid as a foreign key
- *       example:
- *         reasons: forget to check in or check out
- *         status: Pending
- *         date : 2024-05-14
- *         UserId: 1
  */
 module.exports = (sequelize, DataTypes) => {
   const Attendance_Record = sequelize.define("Attendance_Record", {

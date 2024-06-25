@@ -83,7 +83,7 @@ const createStaff = async (req, res) => {
     !address ||
     !annualLeave ||
     !medicalLeave ||
-    !attendanceLeave||
+    !attendanceLeave ||
     !nrc ||
     !departmentName
   )
@@ -146,7 +146,7 @@ const getUserList = async (req, res, next) => {
 
   try {
     const whereClause = {
-      ...(position && { Position: position }),
+      ...(position && { Position: { [Op.like]: `%${position}%` } }),
       ...(username && { username: { [Op.like]: `%${username}%` } }),
       ...(employeeId && { EmployeeId: { [Op.like]: `%${employeeId}%` } }),
     };
@@ -216,6 +216,8 @@ const updateUserData = async (req, res) => {
   });
   const {
     username,
+    email,
+    password,
     position,
     employeeId,
     phoneNumber,
@@ -237,6 +239,8 @@ const updateUserData = async (req, res) => {
   if (newDepartment.id != departmentId) {
     updatedUserData = await user.update({
       username: username,
+      Email: email,
+      password: password,
       Position: position,
       EmployeeId: employeeId,
       PhoneNumber: phoneNumber,

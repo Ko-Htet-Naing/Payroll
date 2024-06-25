@@ -11,21 +11,64 @@ const attendanceRequestController = require("../../controller/attendanceRequestC
  *   post:
  *     summary: Create a new leave record
  *     tags: [AttendanceRecord]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/AttendanceRecord'
+ *             type: object
+ *             required:
+ *               - reason
+ *               - date
+ *               - UserId
+ *             properties:
+ *               reason:
+ *                  type: string
+ *               date:
+ *                  type: string
+ *                  format: date
+ *               UserId:
+ *                  type: integer
  *     responses:
  *       200:
- *         description: The created attendance request.
+ *         description: The created attendance request.s
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/AttendanceRecord'
  *       404:
  *         description: Attendance Request Not Found
+ * paths:
+ *   /api/v1/attendanceRequest/adminApprove:
+ *     post:
+ *       summary: admin approve
+ *       tags: [AttendanceRecord]
+ *       security:
+ *         - bearerAuth: []
+ *       requestBody:
+ *         required: true
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                  - id
+ *                  - adminApproved
+ *               properties:
+ *                  id:
+ *                    type: integer
+ *                  adminApproved:
+ *                    type: boolean
+ *               example:
+ *                  id: 1
+ *                  adminApproved: true
+ *       responses:
+ *         200:
+ *           description: Approved successfully
+ *         404:
+ *           description: User not found
  * components:
  *   parameters:
  *     PageParam:
@@ -51,6 +94,8 @@ const attendanceRequestController = require("../../controller/attendanceRequestC
  *   get:
  *     summary: Lists all the attendance request
  *     tags: [AttendanceRecord]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - $ref: '#/components/parameters/PageParam'
  *       - $ref: '#/components/parameters/PageSizeParam'
@@ -65,33 +110,31 @@ const attendanceRequestController = require("../../controller/attendanceRequestC
  *                  $ref: '#/components/schemas/AttendanceRecord'
  *       404:
  *         description: Attendance request Not Found
- * /api/v1/attendanceRequest/{id}:
- *   patch:
- *     summary: Update the status by the id
+ * /api/v1/getAttendance/{id}:
+ *   get:
+ *     summary: Lists all the attendance request by Id
  *     tags: [AttendanceRecord]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: userId
  *         schema:
  *           type: integer
  *         required: true
- *         description: The attendance request id
- *     requestBody:
- *       required:
- *         - status
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/AttendanceRecord'
+ *         description: the user id
+ *       - $ref: '#/components/parameters/PageParam'
+ *       - $ref: '#/components/parameters/PageSizeParam'
  *     responses:
  *       200:
- *         description: The status was updated
+ *         description: The list of the attendance request
  *         content:
- *           application/json:
- *             schema:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
  *               $ref: '#/components/schemas/AttendanceRecord'
- *       404:
- *         description: The attendance request was not found
+ *
  */
 
 router.post(

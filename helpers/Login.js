@@ -12,8 +12,9 @@ const login = async (req, res) => {
     where: { EmployeeId: employeeId },
     raw: true,
   });
-  const department = await Department.findByPk(user.DepartmentId);
+
   if (!user) return res.status(404).send("User not found");
+  const department = await Department.findByPk(user.DepartmentId);
   const dbComparePassword = await comparePassword(password, user.password);
   if (!dbComparePassword)
     return res.status(401).send({ message: "Wrong Password" });
@@ -23,7 +24,7 @@ const login = async (req, res) => {
   const accessToken = jwt.sign(
     { UserInfo: { empId: dbEmployeeId, role: role } },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "1m" }
+    { expiresIn: "3h" }
   );
   const refreshTokenToStore = jwt.sign(
     {

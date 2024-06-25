@@ -102,7 +102,10 @@ class payRollHelper {
         ) {
           const formattedDate = d.toISOString().slice(0, 10);
           if (formattedDate <= endDate.toISOString().slice(0, 10)) {
-            if (!attendanceRecord || attendanceRecord.date != formattedDate) {
+            const isAttendanceDate = Attendance.findOne({
+              where: { UserId: userId, date: formattedDate },
+            });
+            if (!isAttendanceDate) {
               count++;
               leaveDate.add(formattedDate);
             }
@@ -127,7 +130,7 @@ class payRollHelper {
     const whereUser = {
       ...(username && { username: { [Op.like]: `%${username}%` } }),
       ...(employeeId && { EmployeeId: { [Op.like]: `%${employeeId}%` } }),
-      ...(position && { Position: position }),
+      ...(position && { Position: { [Op.like]: `%${position}%` } }),
     };
 
     const totalCount = await Payroll.count();

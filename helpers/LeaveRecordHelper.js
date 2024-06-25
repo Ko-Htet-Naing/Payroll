@@ -25,6 +25,7 @@ async function getLeaveList({
   department,
   leaveType,
   employeeId,
+  position,
 }) {
   try {
     const whereClause = {
@@ -40,6 +41,7 @@ async function getLeaveList({
     const whereUser = {
       ...(username && { username: { [Op.like]: `%${username}%` } }),
       ...(employeeId && { EmployeeId: { [Op.like]: `%${employeeId}%` } }),
+      ...(position && { Position: { [Op.like]: `%${position}%` } }),
     };
 
     const userInclude = {

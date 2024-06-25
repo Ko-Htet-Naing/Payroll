@@ -12,6 +12,7 @@ const parseQueryParams = (req) => ({
   department: req.query.department,
   leaveType: req.query.leaveType,
   employeeId: req.query.employeeId,
+  position: req.query.position,
 });
 
 const createLeave = async (req, res) => {
@@ -48,6 +49,7 @@ const getLeaveList = async (req, res) => {
     department,
     leaveType,
     employeeId,
+    position,
   } = parseQueryParams(req);
 
   try {
@@ -62,8 +64,11 @@ const getLeaveList = async (req, res) => {
       department,
       leaveType,
       employeeId,
+      position,
     });
-    res.json({
+    if (!leaveList.length > 0)
+      return res.status(404).json("Leave record not found");
+    res.status(200).json({
       columns: [
         "username",
         "deptName",
@@ -105,7 +110,9 @@ const getByUserId = async (req, res) => {
       department,
       leaveType,
     });
-    res.json({
+    if (!leaveListByUserId > 0)
+      return res.status(404).json({ message: "leave record not found" });
+    res.status(200).json({
       columns: [
         "username",
         "departmentName",

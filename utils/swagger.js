@@ -4,7 +4,7 @@ const { version } = require("../package.json");
 
 const options = {
   definition: {
-    openapi: "3.1.0",
+    openapi: "3.0.0",
     info: {
       title: "Employee Management Express API with Swagger",
       version,
@@ -12,7 +12,7 @@ const options = {
         "This is a simple CRUD API application made with Express and documented with Swagger",
     },
     components: {
-      securitySchemas: {
+      securitySchemes: {
         bearerAuth: {
           type: "http",
           scheme: "bearer",
@@ -35,7 +35,13 @@ const swaggerDocs = (app, port) => {
   app.use(
     "/api-docs",
     swaggerUi.serve,
-    swaggerUi.setup(specs, { explorer: false })
+    swaggerUi.setup(specs, {
+      explorer: true,
+      swaggerOptions: {
+        defaultModelsExpandDepth: -1, // Controls the default expansion depth for models on Swagger UI
+        docExpansion: "list", // Controls how the API listing is displayed
+      },
+    })
   );
 
   // Docs in JSON format

@@ -10,12 +10,33 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *   post:
  *     summary: Create a new leave record
  *     tags: [LeaveRecord]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/LeaveRecord'
+ *             type: object
+ *             required:
+ *               - reasons
+ *               - leaveType
+ *               - from
+ *               - to
+ *               - UserId
+ *             properties:
+ *               reasons:
+ *                  type: string
+ *               leaveType:
+ *                  type: string
+ *               from:
+ *                  type: string
+ *                  format: date
+ *               to:
+ *                  type: string
+ *                  format: date
+ *               UsreId:
+ *                  type: integer
  *     responses:
  *       200:
  *         description: The created leave record.
@@ -95,6 +116,8 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *   get:
  *     summary: Lists all the leave records
  *     tags: [LeaveRecord]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - $ref: '#/components/parameters/PageParam'
  *       - $ref: '#/components/parameters/PageSizeParam'
@@ -119,6 +142,8 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *   patch:
  *     summary: Update the status by the id
  *     tags: [LeaveRecord]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -131,12 +156,14 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/LeaveRecord'
- *             type: objects
+ *             type: object
  *             required:
  *               - status
  *             properties:
- *               status: string
+ *               status:
+ *                 type: string
+ *             example:
+ *               status: "Approved"
  *     responses:
  *       200:
  *         description: The status was updated
@@ -150,6 +177,8 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *   get:
  *     summary: Get the leave records by UserId
  *     tags: [LeaveRecord]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: UserId
@@ -180,6 +209,8 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *   delete:
  *     summary: Remove the leave record by the id
  *     tags: [LeaveRecord]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -200,6 +231,8 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *   put:
  *     summary: Update the records by the id
  *     tags: [LeaveRecord]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -212,8 +245,7 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/LeaveRecord'
- *             type: objects
+ *             type: object
  *             required:
  *               - reasons
  *               - leaveType
@@ -221,11 +253,18 @@ const leaveRecordController = require("../../controller/leaveRecordController");
  *               - to
  *               - attachmentUrl
  *             properties:
- *               reasons: "illness"
- *               leaveType: Medical Leave
- *               from: 2024-5-28
- *               to: 2024-5-28
- *               attachmentUrl: file from url
+ *               reasons:
+ *                  type: string
+ *               leaveType:
+ *                  type: string
+ *               from:
+ *                  type: string
+ *                  format: date
+ *               to:
+ *                  type: string
+ *                  format: date
+ *               attachmentUrl:
+ *                  type: string
  *     responses:
  *       200:
  *         description: The leave record was updated

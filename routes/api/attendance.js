@@ -12,12 +12,14 @@ const attendanceClick = require("../../controller/attendanceClickController");
  *      post:
  *        summary: Attendance managing API
  *        tags: [Attendance]
+ *        security:
+ *          - bearerAuth: []
  *        requestBody:
  *          required: true
  *          content:
  *            application/json:
  *              schema:
- *                $ref: '#/components/schemas/Attendance'
+ *
  *                type: object
  *                required:
  *                  - dateTime
@@ -105,6 +107,8 @@ const attendanceClick = require("../../controller/attendanceClickController");
  *      get:
  *        summary: Lists all the attendance
  *        tags: [Attendance]
+ *        security:
+ *          - bearerAuth: []
  *        parameters:
  *          - $ref: '#/components/parameters/PageParam'
  *          - $ref: '#/components/parameters/PageSizeParam'
@@ -127,6 +131,8 @@ const attendanceClick = require("../../controller/attendanceClickController");
  *      get:
  *        summary: Lists all the attendance by userId
  *        tags: [Attendance]
+ *        security:
+ *          - bearerAuth: []
  *        parameters:
  *          - in: path
  *            name: UserId

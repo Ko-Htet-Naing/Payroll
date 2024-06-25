@@ -155,7 +155,7 @@ const getAttendanceRequest = async (req, res) => {
   const whereUser = {
     ...(username && { username: { [Op.like]: `%${username}%` } }),
     ...(employeeId && { EmployeeId: { [Op.like]: `%${employeeId}%` } }),
-    ...(position && { Position: position }),
+    ...(position && { Position: { [Op.like]: `%${position}%` } }),
   };
   const userInclude = {
     where: whereUser,
@@ -195,16 +195,6 @@ const getAttendanceRequest = async (req, res) => {
   });
 };
 
-// update status
-const updatedStatus = async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-
-  // const attendanceRequest = await Attendance_Record.findByPk(id);
-  // if (!attendanceRequest) res.status(404).json("Attendance request not found");
-  // attendanceRequest.status = status;
-};
-
 // get attendance request by id
 const getAttendanceRequestById = async (req, res) => {
   const page = Math.max(0, Number.parseInt(req.query.page) || 0);
@@ -212,12 +202,13 @@ const getAttendanceRequestById = async (req, res) => {
   const { id } = req.params;
   if (!id) return res.status(404).send("Id is missing");
   const totalCount = await Attendance_Record.count({ where: { UserId: id } });
+
   const result = await Attendance_Record.findAll({
     where: {
       UserId: id,
     },
     raw: true,
-    imit: size,
+    limit: size,
     offset: page * size,
   });
   console.log(result);
@@ -229,6 +220,16 @@ const getAttendanceRequestById = async (req, res) => {
         totalPage: Math.ceil(totalCount / size),
       })
     : res.status(404).json({ message: "You have no attendance request yet." });
+};
+
+// update status
+const updatedStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  // const attendanceRequest = await Attendance_Record.findByPk(id);
+  // if (!attendanceRequest) res.status(404).json("Attendance request not found");
+  // attendanceRequest.status = status;
 };
 
 module.exports = {

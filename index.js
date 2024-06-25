@@ -1,4 +1,6 @@
 const express = require("express");
+
+const swaggerDocs = require("./utils/swagger");
 const authlocation = require("./routes/api/authLocation");
 const user = require("./routes/api/Users");
 const testRoute = require("./routes/testRoute");
@@ -17,7 +19,6 @@ const attendanceRequest = require("./routes/api/attendanceRequest");
 const payroll = require("./routes/api/payroll");
 const holidays = require("./routes/api/holidays");
 const profileImage = require("./routes/api/profileImage");
-const swaggerDocs = require("./utils/swagger");
 const fcm = require("./routes/api/fcm");
 const location = require("./routes/api/location");
 const login = require("./routes/api/login");
@@ -37,10 +38,18 @@ app.use(cookieParser());
 
 // Default value resetter
 require("./config/scheduler");
+
+// Swagger documentation
+swaggerDocs(app, PORT);
+
 app.use("/api/v1/login", login);
 app.use("/api/v1/refresh", handleRefresh);
 
-// app.use(verifyJWT);
+app.use(verifyJWT);
+
+// Swagger documentation
+swaggerDocs(app, PORT);
+
 app.use("/api/v1/users", user);
 
 // Routes API
@@ -63,9 +72,6 @@ app.use("/api/v1/updateProfileImage", profileImage);
 app.use("/api/v1/attendance", attendance);
 // Testing route for jwt
 app.use("/api/v1/test", testRoute);
-
-// Swagger documentation
-swaggerDocs(app, PORT);
 
 // For handling unknown request
 app.all((req, res) => {

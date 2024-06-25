@@ -12,6 +12,8 @@ const ResetPassword = require("../../helpers/ResetPassword");
  *   post:
  *     summary: Create a new employee record from HR
  *     tags: [Employee]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -87,6 +89,8 @@ const ResetPassword = require("../../helpers/ResetPassword");
  *   get:
  *     summary: Lists all the books
  *     tags: [Employee]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - $ref: '#/components/parameters/PageParam'
  *       - $ref: '#/components/parameters/PageSizeParam'
@@ -108,6 +112,8 @@ const ResetPassword = require("../../helpers/ResetPassword");
  *      delete:
  *        summary: Delete a user by Id
  *        tags: [Employee]
+ *        security:
+ *          - bearerAuth: []
  *        parameters:
  *          - in: path
  *            name: id
@@ -123,7 +129,9 @@ const ResetPassword = require("../../helpers/ResetPassword");
  * /api/v1/users/update/{id}:
  *   put:
  *     summary: Update the user record by the id
- *     tags: [Users]
+ *     tags: [Employee]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -169,34 +177,12 @@ router.put("/update/:id", user.updateUserData);
  *   name: Users
  *   description: The Login managing API
  * paths:
- *   /api/v1/users/loginUser:
- *      post:
- *        summary: login managing API
- *        tags: [Users]
- *        requestBody:
- *          required: true
- *          content:
- *            application/json:
- *              schema:
- *                $ref: '#/components/schemas/Users'
- *                type: object
- *                required:
- *                  - username
- *                  - password
- *                properties:
- *                  username:
- *                    type: string
- *                  password:
- *                    type: string
- *        responses:
- *          200 :
- *            description: user login created
- *          400 :
- *            description: Invalid input
  *   /api/v1/users/resetPassword:
  *      post:
  *        summary: Reset password managing API
- *        tags: [Users]
+ *        tags: [Employee]
+ *        security:
+ *          - bearerAuth: []
  *        requestBody:
  *          required: true
  *          content:
@@ -220,18 +206,6 @@ router.put("/update/:id", user.updateUserData);
  *            description: changed password
  *          400 :
  *            description: invalid password
- *   /api/v1/users/logout:
- *      get:
- *        summary: Logout the current user
- *        tags: [Users]
- *        responses:
- *          200 :
- *            description: Logout successful
- *          404 :
- *            description: User not found
- *          400:
- *            description: User already logout
- *
  */
 router.post("/resetPassword", ResetPassword);
 module.exports = router;

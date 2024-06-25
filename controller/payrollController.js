@@ -73,11 +73,12 @@ const getPayrollForOneMonth = async (req, res) => {
           start,
           endDate
         );
+        console.log("start date11", start, "userId", user.UserId);
         const payrollRate = await payRollHelper.salaryPerDay(
           user.User.Salary,
           totalDays,
           endDate,
-          createdAt
+          start
         );
 
         const calculatePayroll = totalDaysWorked * payrollRate - fund;

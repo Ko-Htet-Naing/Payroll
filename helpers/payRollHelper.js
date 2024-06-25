@@ -10,10 +10,14 @@ const { Op } = require("sequelize");
 const dateHelper = require("./dateHelper");
 class payRollHelper {
   // တရက်စာရဲ့ payroll ကို တွက်
-  static async salaryPerDay(salary, totalDays, endDate, createdAt) {
+  static async salaryPerDay(salary, totalDays, endDate, start) {
     let payrollRate = 0;
+    console.log("start pooo", start);
+    console.log("end pp", endDate);
 
-    if (createdAt <= endDate) {
+    if (
+      start.toISOString().slice(0, 10) <= endDate.toISOString().slice(0, 10)
+    ) {
       payrollRate = salary / totalDays;
     } else {
       payrollRate = 0;

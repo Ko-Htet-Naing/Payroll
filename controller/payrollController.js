@@ -28,6 +28,9 @@ const getPayrollForOneMonth = async (req, res) => {
   const startDate = new Date(Date.UTC(year, startMonth, 26));
   const endDate = new Date(Date.UTC(year, monthNum - 1, 25));
 
+  console.log("start", startDate);
+  console.log("end", endDate);
+
   const totalDays = await dateHelper.totalDays(startDate, endDate);
 
   console.log("total", totalDays);
@@ -173,6 +176,8 @@ const AttendanceListByUserId = async (req, res) => {
 
   endDate = new Date(Date.UTC(year, monthNum - 1, 25));
 
+  console.log("end Date 1", endDate);
+
   const totalDays = await dateHelper.totalDays(startDate, endDate);
 
   if (
@@ -189,9 +194,13 @@ const AttendanceListByUserId = async (req, res) => {
     ) {
       endDate = today;
     }
-  } else {
+  } else if (
+    endDate.toISOString().slice(0, 10) >= today.toISOString().slice(0, 10)
+  ) {
     endDate = today;
   }
+
+  console.log("end date 2", endDate);
   await userHelper.userListById(
     userId,
     startDate,

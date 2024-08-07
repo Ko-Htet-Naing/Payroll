@@ -12,8 +12,6 @@ class payRollHelper {
   // တရက်စာရဲ့ payroll ကို တွက်
   static async salaryPerDay(salary, totalDays, endDate, start) {
     let payrollRate = 0;
-    console.log("start pooo", start);
-    console.log("end pp", endDate);
 
     if (
       start.toISOString().slice(0, 10) <= endDate.toISOString().slice(0, 10)
